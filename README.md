@@ -1,5 +1,7 @@
 # Query Params
 
+Automatically generate query parameters based on Eloquent Models
+
 ## Features
 
 This package provides automatic rules and a builder for query parameters to be used in GET routes for index requests.  
