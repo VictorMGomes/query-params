@@ -11,6 +11,7 @@ class Fields
     public static function generateRules(array $fields): array
     {
         $allFields = [];
+        $rules = [];
 
         foreach ($fields as $field => $value) {
             if ($value['type'] == 'relation') {
@@ -19,16 +20,12 @@ class Fields
             $allFields[$field] = $value;
         }
 
-        $rules = [
-            'fields' => [
-                'sometimes',
-                'array',
-            ],
-            'fields.*' => [
-                'string',
-                Rule::in(array_keys($allFields)),
-            ],
-        ];
+
+        foreach ($allFields as $field => $value) {
+            $rule_key = "fields" . "{" . $field . "}";
+            $rule_value = ['string', 'sometimes', Rule::in('add')];
+            $rules[$rule_key] = $rule_value;
+        };
 
         return $rules;
     }

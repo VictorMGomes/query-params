@@ -20,6 +20,12 @@ final class RuleType
 
     public const SIZE_2 = 'size:2';
 
+    public const REQUIRED = 'required';
+
+    public const FILLED = 'filled';
+
+    public const MIN_1 = 'min:1';
+
     public static function build(string ...$rules): string
     {
         return implode('|', $rules);

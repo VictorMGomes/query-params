@@ -17,20 +17,20 @@ class Filters
 
         $rules = [];
 
-        $rules['filters'] = ['sometimes', 'array'];
-
         foreach ($fields as $field => $value) {
             if ($value['type'] == 'relation') {
                 continue;
             }
-            $rules["filters.$field"] = ['sometimes', 'array'];
 
             foreach ($operators as $operator) {
                 $allowedTypes = $operatorTypes[$operator] ?? [];
                 $fieldType = $value['type'] ?? 'string';
 
+                $rule_key = "filters" . "{" . $field . "}" . "{" . "$operator" . "}";
+                $rule_value = $operatorRules[$operator];
+
                 if (in_array($fieldType, $allowedTypes, true)) {
-                    $rules["filters.$field.$operator"] = $operatorRules[$operator];
+                    $rules[$rule_key] = $rule_value;
                 }
             }
         }

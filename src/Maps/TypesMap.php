@@ -70,7 +70,7 @@ class TypesMap
                     AbstractType::BOOLEAN,
                     AbstractType::DATE,
                 ],
-                AssociatedIndex::RULES => RuleType::build(RuleType::STRING, RuleType::SOMETIMES),
+                AssociatedIndex::RULES => RuleType::build(RuleType::STRING, RuleType::MIN_1, RuleType::SOMETIMES),
             ],
             Operators::NE => [
                 AssociatedIndex::TYPES => [
@@ -80,7 +80,7 @@ class TypesMap
                     AbstractType::BOOLEAN,
                     AbstractType::DATE,
                 ],
-                AssociatedIndex::RULES => RuleType::build(RuleType::STRING, RuleType::SOMETIMES),
+                AssociatedIndex::RULES => RuleType::build(RuleType::STRING, RuleType::MIN_1, RuleType::SOMETIMES),
             ],
             Operators::GT => [
                 AssociatedIndex::TYPES => [
@@ -117,7 +117,7 @@ class TypesMap
                     AbstractType::NUMERIC,
                     AbstractType::DATE,
                 ],
-                AssociatedIndex::RULES => RuleType::build(RuleType::ARRAY, RuleType::SOMETIMES),
+                AssociatedIndex::RULES => RuleType::build(RuleType::ARRAY, RuleType::MIN_1, RuleType::SOMETIMES),
             ],
             Operators::NIN => [
                 AssociatedIndex::TYPES => [
@@ -126,7 +126,7 @@ class TypesMap
                     AbstractType::NUMERIC,
                     AbstractType::DATE,
                 ],
-                AssociatedIndex::RULES => RuleType::build(RuleType::ARRAY, RuleType::SOMETIMES),
+                AssociatedIndex::RULES => RuleType::build(RuleType::ARRAY, RuleType::MIN_1, RuleType::SOMETIMES),
             ],
             Operators::NULL => [
                 AssociatedIndex::TYPES => [
@@ -166,43 +166,43 @@ class TypesMap
                 AssociatedIndex::TYPES => [
                     AbstractType::STRING,
                 ],
-                AssociatedIndex::RULES => RuleType::build(RuleType::STRING, RuleType::SOMETIMES),
+                AssociatedIndex::RULES => RuleType::build(RuleType::STRING, RuleType::MIN_1, RuleType::SOMETIMES),
             ],
             Operators::NOTLIKE => [
                 AssociatedIndex::TYPES => [
                     AbstractType::STRING,
                 ],
-                AssociatedIndex::RULES => RuleType::build(RuleType::STRING, RuleType::SOMETIMES),
+                AssociatedIndex::RULES => RuleType::build(RuleType::STRING, RuleType::MIN_1, RuleType::SOMETIMES),
             ],
             Operators::ILIKE => [
                 AssociatedIndex::TYPES => [
                     AbstractType::STRING,
                 ],
-                AssociatedIndex::RULES => RuleType::build(RuleType::STRING, RuleType::SOMETIMES),
+                AssociatedIndex::RULES => RuleType::build(RuleType::STRING, RuleType::MIN_1, RuleType::SOMETIMES),
             ],
             Operators::NOTILIKE => [
                 AssociatedIndex::TYPES => [
                     AbstractType::STRING,
                 ],
-                AssociatedIndex::RULES => RuleType::build(RuleType::STRING, RuleType::SOMETIMES),
+                AssociatedIndex::RULES => RuleType::build(RuleType::STRING, RuleType::MIN_1, RuleType::SOMETIMES),
             ],
             Operators::OR => [
                 AssociatedIndex::TYPES => [
                     AbstractType::ARRAY,
                 ],
-                AssociatedIndex::RULES => RuleType::build(RuleType::ARRAY, RuleType::SOMETIMES),
+                AssociatedIndex::RULES => RuleType::build(RuleType::ARRAY, RuleType::MIN_1, RuleType::SOMETIMES),
             ],
             Operators::AND => [
                 AssociatedIndex::TYPES => [
                     AbstractType::ARRAY,
                 ],
-                AssociatedIndex::RULES => RuleType::build(RuleType::ARRAY, RuleType::SOMETIMES),
+                AssociatedIndex::RULES => RuleType::build(RuleType::ARRAY, RuleType::MIN_1, RuleType::SOMETIMES),
             ],
             Operators::NOT => [
                 AssociatedIndex::TYPES => [
                     AbstractType::ARRAY,
                 ],
-                AssociatedIndex::RULES => RuleType::build(RuleType::ARRAY, RuleType::SOMETIMES),
+                AssociatedIndex::RULES => RuleType::build(RuleType::ARRAY, RuleType::MIN_1, RuleType::SOMETIMES),
             ],
             Operators::EXISTS => [
                 AssociatedIndex::TYPES => [
@@ -221,30 +221,29 @@ class TypesMap
                     AbstractType::ARRAY,
                     AbstractType::STRING,
                 ],
-                AssociatedIndex::RULES => RuleType::build(RuleType::STRING, RuleType::SOMETIMES),
+                AssociatedIndex::RULES => RuleType::build(RuleType::STRING, RuleType::MIN_1, RuleType::SOMETIMES),
             ],
             Operators::CONTAINEDBY => [
                 AssociatedIndex::TYPES => [
                     AbstractType::ARRAY,
                     AbstractType::STRING,
                 ],
-                AssociatedIndex::RULES => RuleType::build(RuleType::STRING, RuleType::SOMETIMES),
+                AssociatedIndex::RULES => RuleType::build(RuleType::STRING, RuleType::MIN_1, RuleType::SOMETIMES),
             ],
             Operators::OVERLAP => [
                 AssociatedIndex::TYPES => [
                     AbstractType::ARRAY,
                 ],
-                AssociatedIndex::RULES => RuleType::build(RuleType::ARRAY, RuleType::SOMETIMES),
+                AssociatedIndex::RULES => RuleType::build(RuleType::ARRAY, RuleType::MIN_1, RuleType::SOMETIMES),
             ],
             Operators::FTS => [
                 AssociatedIndex::TYPES => [
                     AbstractType::STRING,
                 ],
-                AssociatedIndex::RULES => RuleType::build(RuleType::STRING, RuleType::SOMETIMES),
+                AssociatedIndex::RULES => RuleType::build(RuleType::STRING, RuleType::MIN_1, RuleType::SOMETIMES),
             ],
         ];
 
         return $operatorConfig;
-
     }
 }

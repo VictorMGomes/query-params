@@ -20,16 +20,13 @@ class Rules
         $pageRules = Pages::generateRules();
         $fieldRules = Fields::generateRules($table);
         $includeRules = Includes::generateRules($table);
-        $groupRules = Groups::generateRules($table);
 
         return array_merge(
             $filterRules,
             $sortRules,
             $pageRules,
             $fieldRules,
-            $includeRules,
-            $groupRules
+            $includeRules
         );
-
     }
 }

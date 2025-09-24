@@ -12,12 +12,12 @@ class Types
 {
     public static function getOperatorTypes(): array
     {
-        return array_map(fn ($config) => $config[AssociatedIndex::TYPES], TypesMap::operator());
+        return array_map(fn($config) => $config[AssociatedIndex::TYPES], TypesMap::operator());
     }
 
     public static function getOperatorRules(): array
     {
-        return array_map(fn ($config) => $config[AssociatedIndex::RULES], TypesMap::operator());
+        return array_map(fn($config) => $config[AssociatedIndex::RULES], TypesMap::operator());
     }
 
     public static function resolveType(string $databaseType): string

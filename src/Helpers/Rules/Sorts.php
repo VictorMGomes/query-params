@@ -16,7 +16,10 @@ class Sorts
             if ($value['type'] == 'relation') {
                 continue;
             }
-            $rules["sort.$field"] = [RuleType::SOMETIMES, Rule::in(['asc', 'desc'])];
+
+            $rule_key = "sorts" . "{" . $field . "}";
+            $rule_value = [RuleType::SOMETIMES, Rule::in(['asc', 'desc'])];
+            $rules[$rule_key] = $rule_value;
         }
 
         return $rules;

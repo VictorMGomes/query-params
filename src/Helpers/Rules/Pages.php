@@ -15,8 +15,8 @@ class Pages
     {
         $rules = [];
 
-        $rules[AssociatedIndex::PAGE.'.'.AssociatedIndex::NUMBER] = 'sometimes|integer|min:1';
-        $rules[AssociatedIndex::PAGE.'.'.AssociatedIndex::LIMIT] = 'sometimes|integer|min:1|max:100';
+        $rules[AssociatedIndex::PAGE . "{" . AssociatedIndex::NUMBER . "}"] = 'sometimes|integer|min:1';
+        $rules[AssociatedIndex::PAGE . "{" . AssociatedIndex::LIMIT . "}"] = 'sometimes|integer|min:1|max:100';
 
         return $rules;
     }

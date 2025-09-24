@@ -4,25 +4,25 @@ declare(strict_types=1);
 
 namespace Victormgomes\Queryparams\Helpers;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 
 class ModelInspector
 {
-    public static function info(string $modelClass): array
+    public static function info(string $modelFQCN): array
     {
-        /** @var Model $model */
-        $model = new $modelClass;
+        $model = ClassLoader::instanceModel($modelFQCN);
 
         $info = [
-            'class' => $modelClass,
+            'class' => get_class($model),
             'table' => $model->getTable(),
             'primary_key' => $model->getKeyName(),
-            'fillable' => $model->getFillable(),
+            'visible' => $model->getVisible(),
             'hidden' => $model->getHidden(),
+            'fillable' => $model->getFillable(),
+            'appends' => $model->getAppends(),
             'guarded' => $model->getGuarded(),
             'casts' => $model->getCasts(),
-            'relations' => self::getModelRelations($model),
+            'relations' => self::getModelRelations($model)
         ];
 
         // Adicionar campos de timestamp se estiverem habilitados
@@ -71,38 +71,59 @@ class ModelInspector
 
         return $relations;
     }
+public static function fieldsSummary(string $modelClass): array
+{
+    $info = self::info($modelClass);
 
-    public static function fieldsSummary(string $modelClass): array
-    {
-        $info = self::info($modelClass);
+    $fields = [];
 
-        $fields = [];
-
-        // Step 1: Collect all attribute keys
+    // Se visible estiver definido, priorizar apenas os campos visíveis
+    if (!empty($info['visible'])) {
+        $allFields = array_merge(
+            $info['visible'],
+            $info['appends'] ?? []
+        );
+    } else {
+        // Caso contrário, coletar todos os campos
         $allFields = array_merge(
             $info['fillable'] ?? [],
+            $info['appends'] ?? [],
+            is_array($info['primary_key']) ? $info['primary_key'] : [$info['primary_key'] ?? []],
             array_keys($info['casts'] ?? []),
-            $info['timestamps']['created_at'] ?? [] ? [$info['timestamps']['created_at']] : [],
-            $info['timestamps']['updated_at'] ?? [] ? [$info['timestamps']['updated_at']] : [],
+            !empty($info['timestamps']['created_at']) ? [$info['timestamps']['created_at']] : [],
+            !empty($info['timestamps']['updated_at']) ? [$info['timestamps']['updated_at']] : [],
             isset($info['timestamps']['deleted_at']) ? [$info['timestamps']['deleted_at']] : []
         );
 
-        // Step 2: Add normal fields (fillable, casts, timestamps)
-        foreach (array_unique($allFields) as $field) {
-            $fields[$field] = [
-                'type' => $info['casts'][$field] ?? null,
-            ];
-        }
+        // Remove hidden apenas se visible não estiver definido
+        $hidden = $info['hidden'] ?? [];
+        $allFields = array_diff($allFields, $hidden);
+    }
 
-        // Step 3: Add relations as fields with type = relation
-        foreach ($info['relations'] as $relation) {
-            $fields[$relation] = [
-                'type' => 'relation',
-            ];
-        }
+    // Monta os campos com seus tipos
+    foreach (array_unique($allFields) as $field) {
+        $fields[$field] = [
+            'type' => $info['casts'][$field] ?? 'string',
+        ];
+    }
+
+    // Adiciona relações como "relation"
+    foreach ($info['relations'] as $relation) {
+        $fields[$relation] = [
+            'type' => 'relation',
+        ];
+    }
+
+    foreach ($info['appends'] as $append) {
+        $fields[$append] = [
+            'type' => 'append',
+        ];
+    }
 
         ksort($fields);
 
-        return $fields;
-    }
+    return $fields;
+}
+
+
 }

@@ -12,20 +12,19 @@ class Includes
     {
 
         $relations = [];
+        $rules = [];
 
         foreach ($fields as $field => $value) {
             if ($value['type'] == 'relation') {
-                $relations[] = $field;
+                $relations[$field] = $value;
             }
         }
 
-        $rules = [];
-
-        // Ensure "includes" is optional, but if present, it must be an array
-        $rules['includes'] = ['sometimes', 'array'];
-
-        // Each element of the array must be in $relations
-        $rules['includes.*'] = ['string', Rule::in($relations)];
+        foreach ($relations as $field => $value) {
+            $rule_key = "includes" . "{" . $field . "}";
+            $rule_value = ['string', 'sometimes', Rule::in('add')];
+            $rules[$rule_key] = $rule_value;
+        };
 
         return $rules;
     }
