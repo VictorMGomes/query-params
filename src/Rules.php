@@ -5,24 +5,24 @@ declare(strict_types=1);
 namespace Victormgomes\Queryparams;
 
 use Illuminate\Support\Facades\Log;
-use Victormgomes\Queryparams\Helpers\ModelInspector;
-use Victormgomes\Queryparams\Helpers\Rules as HelpersRules;
+use Victormgomes\Queryparams\Facades\Resource;
+use Victormgomes\Queryparams\Facades\Rules as FacadesRules;
 
 class Rules
 {
-    public static function generate(string $class): array
+    public static function generate(string $modelFQCN): array
     {
         $start = microtime(true);
 
-        $modelSummary = ModelInspector::fieldsSummary($class);
+        $resources = Resource::generate($modelFQCN);
 
-        $rules = HelpersRules::generate($modelSummary);
+        $rules = FacadesRules::generate($resources);
 
         $end = microtime(true);
 
         $duration = $end - $start;
 
-        Log::info("Rules generation for {$class} took {$duration} seconds.");
+        Log::info("Rules generation for {$modelFQCN} took {$duration} seconds.");
 
         return $rules;
     }

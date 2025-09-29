@@ -10,7 +10,7 @@ use Victormgomes\Queryparams\Helpers\Rules\Includes;
 use Victormgomes\Queryparams\Helpers\Rules\Pages;
 use Victormgomes\Queryparams\Helpers\Rules\Sorts;
 
-class Rules
+class QueryResources
 {
     public static function generate(array $table): array
     {
