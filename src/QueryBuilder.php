@@ -17,9 +17,9 @@ class QueryBuilder
     {
         $extra_parameters = array_diff(array_keys($request->all()), array_keys($request->rules()));
 
-        if (!empty($extra_parameters)) {
+        if (! empty($extra_parameters)) {
             throw ValidationException::withMessages([
-                'extra_fields' => 'Unexpected parameter(s) key(s): ' . implode(', ', $extra_parameters),
+                'extra_fields' => 'Unexpected parameter(s) key(s): '.implode(', ', $extra_parameters),
             ]);
         }
 
@@ -27,64 +27,80 @@ class QueryBuilder
 
         // Normalize {field}{op} => [field][op]
         $validated = collect($validatedData)->mapWithKeys(function ($value, $key) {
-            // Replace {something} with [something]
             $normalizedKey = preg_replace('/\{([^}]+)\}/', '[$1]', $key);
+
             return [$normalizedKey => $value];
         })->toArray();
 
         // Convert the array-like string keys into an actual nested array
         $realArray = [];
         foreach ($validated as $key => $value) {
-            // Split the key into its components, e.g., 'data[0][name]' -> ['data', '0', 'name']
             $keys = preg_split('/\[([^\]]+)\]/', $key, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
 
             if ($keys == false) {
                 $keys = [];
             }
 
-            // Use a reference to build the nested array
             $current = &$realArray;
             foreach ($keys as $k) {
-                // If the key doesn't exist, create it as an array
-                if (!isset($current[$k])) {
+                if (! isset($current[$k])) {
                     $current[$k] = [];
                 }
-                // Move the reference to the next level
                 $current = &$current[$k];
             }
-            // Assign the value at the deepest level
             $current = $value;
         }
 
         $model = ClassLoader::instanceModel($modelFQCN);
-
         $query = $model->newQuery();
 
-        // The remaining logic now uses the $realArray
-        // Filters
+        // --- Configuração de Translatable ---
+        // Detecta se o model usa translatable e define quais campos são traduzíveis
+        $translatableFields = [];
+        $locale = app()->getLocale();
+
+        if (property_exists($model, 'translatable') && is_array($model->translatable)) {
+            $translatableFields = $model->translatable;
+        }
+
+        // --- Filters ---
+        // Mantido: O filtro deve ocorrer no nível do banco de dados (SQL)
         if (isset($realArray[AssociatedIndex::FILTERS]) && is_array($realArray[AssociatedIndex::FILTERS])) {
             foreach ($realArray[AssociatedIndex::FILTERS] as $field => $conditions) {
-                if (!is_array($conditions)) {
+                if (! is_array($conditions)) {
                     continue;
                 }
+
+                $targetField = in_array($field, $translatableFields)
+                    ? "{$field}->{$locale}"
+                    : $field;
+
                 foreach ($conditions as $operator => $value) {
-                    Filter::build($query, $field, $operator, $value);
+                    Filter::build($query, $targetField, $operator, $value);
                 }
             }
         }
 
-        // Sorting
+        // --- Sorting ---
+        // Mantido: A ordenação deve ocorrer no nível do banco de dados (SQL)
         if (isset($realArray[AssociatedIndex::SORTS])) {
             foreach ($realArray[AssociatedIndex::SORTS] as $field => $direction) {
-                $query->orderBy($field, $direction);
+                $targetField = in_array($field, $translatableFields)
+                    ? "{$field}->{$locale}"
+                    : $field;
+
+                $query->orderBy($targetField, $direction);
             }
         }
 
-        // Field Selection
+        // --- Field Selection (CORRIGIDO) ---
+        // Alterado: Removemos a transformação SQL "-> as".
+        // Selecionamos o JSON puro para garantir a hidratação correta do Model.
         if (isset($realArray[AssociatedIndex::FIELDS])) {
             $fields = $realArray[AssociatedIndex::FIELDS];
             if (is_array($fields)) {
-                $query->select(array_keys($fields));
+                $requestedFields = array_keys($fields);
+                $query->select($requestedFields);
             }
         }
 
@@ -97,10 +113,30 @@ class QueryBuilder
         }
 
         $page = isset($realArray[AssociatedIndex::PAGE]) ? (array) $realArray[AssociatedIndex::PAGE] : [];
-
         $page_limit = isset($page[AssociatedIndex::LIMIT]) ? (int) $page[AssociatedIndex::LIMIT] : 10;
         $page_number = isset($page[AssociatedIndex::NUMBER]) ? (int) $page[AssociatedIndex::NUMBER] : 1;
 
-        return $query->paginate($page_limit, ['*'], AssociatedIndex::PAGE, $page_number);
+        $paginator = $query->paginate($page_limit, ['*'], AssociatedIndex::PAGE, $page_number);
+
+        // --- Transformação de Saída (NOVO) ---
+        // Intercepta os itens da página atual e converte os campos translatable para string
+        if (! empty($translatableFields)) {
+            $paginator->through(function ($item) use ($translatableFields, $locale) {
+                // Converte o model para array (respeitando $visible/$hidden)
+                $data = $item->toArray();
+
+                foreach ($translatableFields as $field) {
+                    // Se o campo existe no array final (foi selecionado), aplicamos a tradução
+                    if (array_key_exists($field, $data)) {
+                        // Usa o método getTranslation do pacote Spatie para pegar a string correta
+                        $data[$field] = $item->getTranslation($field, $locale);
+                    }
+                }
+
+                return $data;
+            });
+        }
+
+        return $paginator;
     }
 }

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Victormgomes\Queryparams\Facades;
 
-use Illuminate\Database\Eloquent\ModelInspector;
 use Illuminate\Support\Collection;
 use Victormgomes\Queryparams\Enums\AssociatedIndex;
 use Victormgomes\Queryparams\Enums\Operators;
@@ -14,7 +13,7 @@ class Resource
 {
     public static function generate(string $modelFQCN, $connection = null): array
     {
-        $inspect = new ModelInspector(app());
+        $inspect = new OfflineModelInspector(app());
 
         $table = $inspect->inspect($modelFQCN, $connection);
 
