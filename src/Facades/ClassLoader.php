@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Victormgomes\Queryparams\Facades;
+namespace Victormgomes\QueryParams\Facades;
 
 use Composer\Autoload\ClassLoader as ComposerClassLoader;
 use Illuminate\Database\Eloquent\Model;

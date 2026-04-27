@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Victormgomes\Queryparams\Enums;
+namespace Victormgomes\QueryParams\Enums;
 
 use ReflectionClass;
 

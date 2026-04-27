@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Victormgomes\Queryparams\Facades;
+namespace Victormgomes\QueryParams\Facades;
 
 use Illuminate\Database\Eloquent\ModelInspector as EloquentModelInspector;
 use Illuminate\Database\Eloquent\Relations\Relation;

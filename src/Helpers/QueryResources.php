@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Victormgomes\Queryparams\Helpers;
+namespace Victormgomes\QueryParams\Helpers;
 
-use Victormgomes\Queryparams\Helpers\Rules\Fields;
-use Victormgomes\Queryparams\Helpers\Rules\Filters;
-use Victormgomes\Queryparams\Helpers\Rules\Includes;
-use Victormgomes\Queryparams\Helpers\Rules\Pages;
-use Victormgomes\Queryparams\Helpers\Rules\Sorts;
+use Victormgomes\QueryParams\Helpers\Rules\Fields;
+use Victormgomes\QueryParams\Helpers\Rules\Filters;
+use Victormgomes\QueryParams\Helpers\Rules\Includes;
+use Victormgomes\QueryParams\Helpers\Rules\Pages;
+use Victormgomes\QueryParams\Helpers\Rules\Sorts;
 
 class QueryResources
 {

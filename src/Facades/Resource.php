@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Victormgomes\Queryparams\Facades;
+namespace Victormgomes\QueryParams\Facades;
 
 use Illuminate\Support\Collection;
-use Victormgomes\Queryparams\Enums\AssociatedIndex;
-use Victormgomes\Queryparams\Enums\Operators;
-use Victormgomes\Queryparams\Helpers\Types;
+use Victormgomes\QueryParams\Enums\AssociatedIndex;
+use Victormgomes\QueryParams\Enums\Operators;
+use Victormgomes\QueryParams\Helpers\Types;
 
 class Resource
 {

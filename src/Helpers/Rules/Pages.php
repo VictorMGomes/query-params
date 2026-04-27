@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Victormgomes\Queryparams\Helpers\Rules;
+namespace Victormgomes\QueryParams\Helpers\Rules;
 
-use Victormgomes\Queryparams\Enums\AssociatedIndex;
+use Victormgomes\QueryParams\Enums\AssociatedIndex;
 
 class Pages
 {

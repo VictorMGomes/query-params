@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Victormgomes\Queryparams\Facades;
+namespace Victormgomes\QueryParams\Facades;
 
 use Illuminate\Validation\Rule;
-use Victormgomes\Queryparams\Enums\RuleType;
-use Victormgomes\Queryparams\Helpers\Types;
+use Victormgomes\QueryParams\Enums\RuleType;
+use Victormgomes\QueryParams\Helpers\Types;
 
 class Rules
 {

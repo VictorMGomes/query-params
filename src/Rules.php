@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Victormgomes\Queryparams;
+namespace Victormgomes\QueryParams;
 
 use Illuminate\Support\Facades\Log;
-use Victormgomes\Queryparams\Facades\Resource;
-use Victormgomes\Queryparams\Facades\Rules as FacadesRules;
+use Victormgomes\QueryParams\Facades\Resource;
+use Victormgomes\QueryParams\Facades\Rules as FacadesRules;
 
 class Rules
 {

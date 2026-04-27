@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Victormgomes\Queryparams\Helpers;
+namespace Victormgomes\QueryParams\Helpers;
 
 use Illuminate\Database\Eloquent\Model;
 

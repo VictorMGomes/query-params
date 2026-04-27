@@ -1,5 +1,10 @@
 # Query Params
 
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/victormgomes/query-params.svg?style=flat-square)](https://packagist.org/packages/victormgomes/query-params)
+[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/victormgomes/query-params/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/victormgomes/query-params/actions?query=workflow%3Arun-tests+branch%3Amain)
+[![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/victormgomes/query-params/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/victormgomes/query-params/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
+[![Total Downloads](https://img.shields.io/packagist/dt/victormgomes/query-params.svg?style=flat-square)](https://packagist.org/packages/victormgomes/query-params)
+
 Automatically generate query parameters based on Eloquent Models
 
 ## Features
@@ -20,9 +25,9 @@ The available parameter operations are:
 composer require victormgomes/query-params
 ```
 
-### Usage
+## Usage
 
-#### Rules generation
+### Rules generation
 
 First, use the `Rules::generate` method to inject the automatic query parameter rules into the rules of the desired class that extends a `FormRequest`.  
 You must also provide a fully qualified class name (FQCN) as an argument, for example:
@@ -35,7 +40,7 @@ namespace App\Http\Requests\Users;
 
 use App\Models\User\User;
 use Illuminate\Foundation\Http\FormRequest;
-use Victormgomes\Queryparams\Rules;
+use Victormgomes\QueryParams\Rules;
 
 class UserIndexRequest extends FormRequest
 {
@@ -46,7 +51,6 @@ class UserIndexRequest extends FormRequest
         return $rules;
     }
 }
-
 ```
 
 Now the rules for your query parameters can handle incoming requests,  
@@ -57,7 +61,7 @@ The rules will look like this:
 
 ![Alt text](https://raw.githubusercontent.com/VictorMGomes/art/refs/heads/main/query-params/images/rules-example.png)
 
-#### Query Builder
+### Query Builder
 
 In the `index` method of the controller, use the `UserIndexRequest` class as the type of the incoming request.  
 Then, use the `QueryBuilder::build` method to build the query for the model,  
@@ -72,7 +76,7 @@ namespace App\Http\Controllers\User;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Users\UserIndexRequest;
 use App\Models\User\User;
-use Victormgomes\Queryparams\QueryBuilder;
+use Victormgomes\QueryParams\QueryBuilder;
 
 class UserController extends Controller
 {
@@ -89,8 +93,20 @@ class UserController extends Controller
 }
 ```
 
-Now you can make requests based on the generated rules.  
+## Testing
 
-### Many other improvements coming soon
+```bash
+composer test
+```
 
-Thanks!
+## Changelog
+
+Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
+
+## Credits
+
+- [Victor M. Gomes](https://github.com/VictorMGomes)
+
+## License
+
+The MIT License (MIT). Please see [License File](LICENSE.md) for more information.

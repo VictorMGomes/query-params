@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Victormgomes\Queryparams\Helpers;
+namespace Victormgomes\QueryParams\Helpers;
 
-use Victormgomes\Queryparams\Enums\AbstractType;
-use Victormgomes\Queryparams\Enums\AssociatedIndex;
-use Victormgomes\Queryparams\Maps\TypesMap;
+use Victormgomes\QueryParams\Enums\AbstractType;
+use Victormgomes\QueryParams\Enums\AssociatedIndex;
+use Victormgomes\QueryParams\Maps\TypesMap;
 
 class Types
 {

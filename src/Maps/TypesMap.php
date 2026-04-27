@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Victormgomes\Queryparams\Maps;
+namespace Victormgomes\QueryParams\Maps;
 
-use Victormgomes\Queryparams\Enums\AbstractType;
-use Victormgomes\Queryparams\Enums\AssociatedIndex;
-use Victormgomes\Queryparams\Enums\DatabaseType;
-use Victormgomes\Queryparams\Enums\Operators;
-use Victormgomes\Queryparams\Enums\RuleType;
+use Victormgomes\QueryParams\Enums\AbstractType;
+use Victormgomes\QueryParams\Enums\AssociatedIndex;
+use Victormgomes\QueryParams\Enums\DatabaseType;
+use Victormgomes\QueryParams\Enums\Operators;
+use Victormgomes\QueryParams\Enums\RuleType;
 
 class TypesMap
 {

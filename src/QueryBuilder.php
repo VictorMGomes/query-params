@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Victormgomes\Queryparams;
+namespace Victormgomes\QueryParams;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\ValidationException;
-use Victormgomes\Queryparams\Enums\AssociatedIndex;
-use Victormgomes\Queryparams\Helpers\Builder\Operations\Filter;
-use Victormgomes\Queryparams\Helpers\ClassLoader;
+use Victormgomes\QueryParams\Enums\AssociatedIndex;
+use Victormgomes\QueryParams\Helpers\Builder\Operations\Filter;
+use Victormgomes\QueryParams\Helpers\ClassLoader;
 
 class QueryBuilder
 {

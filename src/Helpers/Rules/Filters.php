@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Victormgomes\Queryparams\Helpers\Rules;
+namespace Victormgomes\QueryParams\Helpers\Rules;
 
-use Victormgomes\Queryparams\Enums\Operators;
-use Victormgomes\Queryparams\Helpers\Types;
+use Victormgomes\QueryParams\Enums\Operators;
+use Victormgomes\QueryParams\Helpers\Types;
 
 class Filters
 {

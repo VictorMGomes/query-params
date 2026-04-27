@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Victormgomes\Queryparams\Helpers\Rules;
+namespace Victormgomes\QueryParams\Helpers\Rules;
 
 use Illuminate\Validation\Rule;
-use Victormgomes\Queryparams\Enums\RuleType;
+use Victormgomes\QueryParams\Enums\RuleType;
 
 class Sorts
 {

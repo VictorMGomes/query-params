@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Victormgomes\Queryparams\Helpers\Builder\Operations;
+namespace Victormgomes\QueryParams\Helpers\Builder\Operations;
 
 use Illuminate\Database\Eloquent\Builder;
-use Victormgomes\Queryparams\Enums\Operators;
+use Victormgomes\QueryParams\Enums\Operators;
 
 class Filter
 {
