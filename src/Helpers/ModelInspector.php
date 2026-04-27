@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Victormgomes\QueryParams\Helpers;
 
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ModelInspector
 {
@@ -22,7 +23,7 @@ class ModelInspector
             'appends' => $model->getAppends(),
             'guarded' => $model->getGuarded(),
             'casts' => $model->getCasts(),
-            'relations' => self::getModelRelations($model)
+            'relations' => self::getModelRelations($model),
         ];
 
         // Adicionar campos de timestamp se estiverem habilitados
@@ -32,7 +33,7 @@ class ModelInspector
                 'updated_at' => $model::UPDATED_AT,
             ];
 
-            if (in_array(\Illuminate\Database\Eloquent\SoftDeletes::class, class_uses_recursive($model))) {
+            if (in_array(SoftDeletes::class, class_uses_recursive($model))) {
                 $deletedAtColumn = property_exists($model, 'deletedAt') ? $model->getDeletedAtColumn() : 'deleted_at';
                 $info['timestamps']['deleted_at'] = $deletedAtColumn;
             }
@@ -71,59 +72,58 @@ class ModelInspector
 
         return $relations;
     }
-public static function fieldsSummary(string $modelClass): array
-{
-    $info = self::info($modelClass);
 
-    $fields = [];
+    public static function fieldsSummary(string $modelClass): array
+    {
+        $info = self::info($modelClass);
 
-    // Se visible estiver definido, priorizar apenas os campos visíveis
-    if (!empty($info['visible'])) {
-        $allFields = array_merge(
-            $info['visible'],
-            $info['appends'] ?? []
-        );
-    } else {
-        // Caso contrário, coletar todos os campos
-        $allFields = array_merge(
-            $info['fillable'] ?? [],
-            $info['appends'] ?? [],
-            is_array($info['primary_key']) ? $info['primary_key'] : [$info['primary_key'] ?? []],
-            array_keys($info['casts'] ?? []),
-            !empty($info['timestamps']['created_at']) ? [$info['timestamps']['created_at']] : [],
-            !empty($info['timestamps']['updated_at']) ? [$info['timestamps']['updated_at']] : [],
-            isset($info['timestamps']['deleted_at']) ? [$info['timestamps']['deleted_at']] : []
-        );
+        $fields = [];
 
-        // Remove hidden apenas se visible não estiver definido
-        $hidden = $info['hidden'] ?? [];
-        $allFields = array_diff($allFields, $hidden);
-    }
+        // Se visible estiver definido, priorizar apenas os campos visíveis
+        if (! empty($info['visible'])) {
+            $allFields = array_merge(
+                $info['visible'],
+                $info['appends'] ?? []
+            );
+        } else {
+            // Caso contrário, coletar todos os campos
+            $allFields = array_merge(
+                $info['fillable'] ?? [],
+                $info['appends'] ?? [],
+                is_array($info['primary_key']) ? $info['primary_key'] : [$info['primary_key'] ?? []],
+                array_keys($info['casts'] ?? []),
+                ! empty($info['timestamps']['created_at']) ? [$info['timestamps']['created_at']] : [],
+                ! empty($info['timestamps']['updated_at']) ? [$info['timestamps']['updated_at']] : [],
+                isset($info['timestamps']['deleted_at']) ? [$info['timestamps']['deleted_at']] : []
+            );
 
-    // Monta os campos com seus tipos
-    foreach (array_unique($allFields) as $field) {
-        $fields[$field] = [
-            'type' => $info['casts'][$field] ?? 'string',
-        ];
-    }
+            // Remove hidden apenas se visible não estiver definido
+            $hidden = $info['hidden'] ?? [];
+            $allFields = array_diff($allFields, $hidden);
+        }
 
-    // Adiciona relações como "relation"
-    foreach ($info['relations'] as $relation) {
-        $fields[$relation] = [
-            'type' => 'relation',
-        ];
-    }
+        // Monta os campos com seus tipos
+        foreach (array_unique($allFields) as $field) {
+            $fields[$field] = [
+                'type' => $info['casts'][$field] ?? 'string',
+            ];
+        }
 
-    foreach ($info['appends'] as $append) {
-        $fields[$append] = [
-            'type' => 'append',
-        ];
-    }
+        // Adiciona relações como "relation"
+        foreach ($info['relations'] as $relation) {
+            $fields[$relation] = [
+                'type' => 'relation',
+            ];
+        }
+
+        foreach ($info['appends'] as $append) {
+            $fields[$append] = [
+                'type' => 'append',
+            ];
+        }
 
         ksort($fields);
 
-    return $fields;
-}
-
-
+        return $fields;
+    }
 }

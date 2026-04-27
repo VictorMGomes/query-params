@@ -26,7 +26,7 @@ class Filters
                 $allowedTypes = $operatorTypes[$operator] ?? [];
                 $fieldType = $value['type'] ?? 'string';
 
-                $rule_key = "filters" . "{" . $field . "}" . "{" . "$operator" . "}";
+                $rule_key = 'filters'.'{'.$field.'}'.'{'."$operator".'}';
                 $rule_value = $operatorRules[$operator];
 
                 if (in_array($fieldType, $allowedTypes, true)) {

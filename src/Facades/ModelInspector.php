@@ -6,6 +6,7 @@ namespace Victormgomes\QueryParams\Facades;
 
 use Illuminate\Database\Eloquent\ModelInspector as EloquentModelInspector;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ModelInspector
 {
@@ -34,7 +35,7 @@ class ModelInspector
                 'updated_at' => $model::UPDATED_AT,
             ];
 
-            if (in_array(\Illuminate\Database\Eloquent\SoftDeletes::class, class_uses_recursive($model))) {
+            if (in_array(SoftDeletes::class, class_uses_recursive($model))) {
                 $deletedAtColumn = property_exists($model, 'deletedAt') ? $model->getDeletedAtColumn() : 'deleted_at';
                 $info['timestamps']['deleted_at'] = $deletedAtColumn;
             }

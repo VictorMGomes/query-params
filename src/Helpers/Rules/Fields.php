@@ -20,12 +20,11 @@ class Fields
             $allFields[$field] = $value;
         }
 
-
         foreach ($allFields as $field => $value) {
-            $rule_key = "fields" . "{" . $field . "}";
+            $rule_key = 'fields'.'{'.$field.'}';
             $rule_value = ['string', 'sometimes', Rule::in('add')];
             $rules[$rule_key] = $rule_value;
-        };
+        }
 
         return $rules;
     }

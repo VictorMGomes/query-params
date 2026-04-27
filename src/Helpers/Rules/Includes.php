@@ -21,10 +21,10 @@ class Includes
         }
 
         foreach ($relations as $field => $value) {
-            $rule_key = "includes" . "{" . $field . "}";
+            $rule_key = 'includes'.'{'.$field.'}';
             $rule_value = ['string', 'sometimes', Rule::in('add')];
             $rules[$rule_key] = $rule_value;
-        };
+        }
 
         return $rules;
     }

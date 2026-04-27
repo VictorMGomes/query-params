@@ -17,7 +17,7 @@ class Sorts
                 continue;
             }
 
-            $rule_key = "sorts" . "{" . $field . "}";
+            $rule_key = 'sorts'.'{'.$field.'}';
             $rule_value = [RuleType::SOMETIMES, Rule::in(['asc', 'desc'])];
             $rules[$rule_key] = $rule_value;
         }
