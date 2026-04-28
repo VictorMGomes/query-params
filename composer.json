@@ -1,7 +1,7 @@
 {
   "name": "victormgomes/query-params",
-  "description": "Automatic query parameters generation based on eloquent models",
-  "version": "0.0.5",
+  "description": "Automatically generate query parameters from Eloquent models",
+  "version": "0.0.6",
   "keywords": [
     "Victor M. Gomes",
     "laravel",
@@ -9,6 +9,16 @@
   ],
   "homepage": "https://github.com/victormgomes/query-params",
   "license": "MIT",
+  "support": {
+    "issues": "https://github.com/victormgomes/query-params/issues",
+    "source": "https://github.com/victormgomes/query-params"
+  },
+  "funding": [
+    {
+      "type": "github",
+      "url": "https://github.com/sponsors/VictorMGomes"
+    }
+  ],
   "authors": [
     {
       "name": "Victor M. Gomes",
