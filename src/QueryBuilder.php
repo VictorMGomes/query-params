@@ -16,6 +16,7 @@ use Victormgomes\QueryParams\Enums\AssociatedIndex;
 use Victormgomes\QueryParams\Enums\Operators;
 use Victormgomes\QueryParams\Support\Builder\Operations\Filter;
 use Victormgomes\QueryParams\Support\ClassLoader;
+use Victormgomes\QueryParams\Support\RelationMapper;
 use Victormgomes\QueryParams\Support\Resource;
 
 class QueryBuilder
@@ -28,17 +29,36 @@ class QueryBuilder
         $data = $request->all();
 
         // 1. Includes
-        $data[AssociatedIndex::INCLUDES] = self::parseSentence(
+        $includes = self::parseSentence(
             $data[AssociatedIndex::INCLUDE] ?? $data[AssociatedIndex::INCLUDES] ?? [],
             fn ($val) => trim($val)
         );
+
+        if ($modelFQCN) {
+            $includes = array_map(function ($include) use ($modelFQCN) {
+                return RelationMapper::resolveRelation($modelFQCN, $include) ?? $include;
+            }, $includes);
+        }
+
+        $data[AssociatedIndex::INCLUDES] = $includes;
         unset($data[AssociatedIndex::INCLUDE]);
 
         // 2. Sorts
-        $data[AssociatedIndex::SORTS] = self::parseKeyValueSentence(
+        $sorts = self::parseKeyValueSentence(
             $data[AssociatedIndex::SORT] ?? $data[AssociatedIndex::SORTS] ?? [],
             'asc'
         );
+
+        if ($modelFQCN) {
+            $mappedSorts = [];
+            foreach ($sorts as $field => $dir) {
+                $resolvedField = RelationMapper::resolveFilterField($modelFQCN, $field);
+                $mappedSorts[$resolvedField] = $dir;
+            }
+            $sorts = $mappedSorts;
+        }
+
+        $data[AssociatedIndex::SORTS] = $sorts;
         unset($data[AssociatedIndex::SORT]);
 
         // 3. Fields
@@ -52,6 +72,15 @@ class QueryBuilder
         $filters = self::parseFilterSentence(
             $data[AssociatedIndex::FILTER] ?? $data[AssociatedIndex::FILTERS] ?? []
         );
+
+        if ($modelFQCN) {
+            $mappedFilters = [];
+            foreach ($filters as $field => $ops) {
+                $resolvedField = RelationMapper::resolveFilterField($modelFQCN, $field);
+                $mappedFilters[$resolvedField] = $ops;
+            }
+            $filters = $mappedFilters;
+        }
 
         // Ensure all filters have an operator
         foreach ($filters as $field => $value) {

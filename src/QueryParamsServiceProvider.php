@@ -9,6 +9,8 @@ use ReflectionClass;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 use Victormgomes\QueryParams\Attributes\MapQueryParams;
+use Victormgomes\QueryParams\Commands\CacheRulesCommand;
+use Victormgomes\QueryParams\Commands\ClearRulesCacheCommand;
 
 class QueryParamsServiceProvider extends PackageServiceProvider
 {
@@ -16,7 +18,11 @@ class QueryParamsServiceProvider extends PackageServiceProvider
     {
         $package
             ->name('query-params')
-            ->hasConfigFile();
+            ->hasConfigFile()
+            ->hasCommands([
+                CacheRulesCommand::class,
+                ClearRulesCacheCommand::class,
+            ]);
     }
 
     public function packageBooted(): void

@@ -107,7 +107,7 @@ class RuleGenerator
     private static function generatePages(array $resources): array
     {
         $rules = [];
-        $allowedPages = $resources['pagination'];
+        $allowedPages = $resources['pagination']['keys'] ?? [];
 
         if (empty($allowedPages)) {
             return $rules;
