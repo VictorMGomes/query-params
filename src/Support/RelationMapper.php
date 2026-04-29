@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Str;
 use ReflectionClass;
 use ReflectionMethod;
+use ReflectionNamedType;
+use ReflectionUnionType;
 use Throwable;
 
 class RelationMapper
@@ -32,12 +34,66 @@ class RelationMapper
         $map = [];
 
         foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
-            // Basic heuristic for relations: no parameters and returns Relation
-            if ($method->getNumberOfParameters() > 0) {
+            // 1. Basic check: Relations never have required parameters
+            if ($method->getNumberOfRequiredParameters() > 0) {
+                continue;
+            }
+
+            // 2. Class check: Skip methods declared by the Laravel core or Eloquent internals
+            $declaringClass = $method->getDeclaringClass()->getName();
+            if (str_starts_with($declaringClass, 'Illuminate\Database\Eloquent') ||
+                str_starts_with($declaringClass, 'Illuminate\Support\Traits')) {
+                continue;
+            }
+
+            // 3. Type Hint check: Use Reflection to avoid execution if possible
+            $returnType = $method->getReturnType();
+
+            if ($returnType) {
+                $types = [];
+                if ($returnType instanceof ReflectionNamedType) {
+                    $types[] = $returnType->getName();
+                } elseif ($returnType instanceof ReflectionUnionType) {
+                    foreach ($returnType->getTypes() as $type) {
+                        if ($type instanceof ReflectionNamedType) {
+                            $types[] = $type->getName();
+                        }
+                    }
+                }
+
+                $isRelation = false;
+                $isExplicitlyNotRelation = false;
+
+                foreach ($types as $typeName) {
+                    if (is_a($typeName, Relation::class, true)) {
+                        $isRelation = true;
+                        break;
+                    }
+
+                    // If it returns a primitive or non-Relation class, it's likely not a relation
+                    if (in_array($typeName, ['bool', 'void', 'int', 'string', 'array', 'object', 'float', 'mixed', 'self', 'static', 'parent'])) {
+                        $isExplicitlyNotRelation = true;
+                    }
+                }
+
+                // If it's a known non-relation type, skip it entirely without executing
+                if ($isExplicitlyNotRelation && ! $isRelation) {
+                    continue;
+                }
+            }
+
+            // 4. Blacklist: Skip common non-relation methods that might not have type hints in older versions
+            if (in_array($method->getName(), [
+                'jsonSerialize', 'toArray', 'replicate', 'push', 'save',
+                'delete', 'forceDelete', 'restore', 'touch', 'refresh',
+                'getAttributes', 'getOriginal', 'getDirty', 'getChanges',
+                'wasChanged', 'isDirty', 'isClean', 'getRelations',
+            ])) {
                 continue;
             }
 
             try {
+                // 5. Execution: Now it is safe to call the method to confirm if it returns a Relation
                 // We use @ to suppress potential errors from calling methods that might depend on state
                 $return = @$instance->{$method->getName()}();
 
