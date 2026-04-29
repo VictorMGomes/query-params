@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Victormgomes\QueryParams\Support;
 
+use Illuminate\Database\Eloquent\ModelInfo;
 use Illuminate\Database\Eloquent\ModelInspector;
 use Illuminate\Support\Collection;
 use Victormgomes\QueryParams\Enums\AssociatedIndex;
@@ -14,7 +15,7 @@ class Resource
     public static function generate(string $modelFQCN, $connection = null): array
     {
         $inspector = new ModelInspector(app());
-        /** @var \Illuminate\Database\Eloquent\ModelInfo $modelInfo */
+        /** @var ModelInfo $modelInfo */
         $modelInfo = $inspector->inspect($modelFQCN, $connection);
 
         $attributes = [];

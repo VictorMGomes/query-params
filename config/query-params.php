@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+use App\Support\QueryDrivers\TranslationDriver;
 
 return [
     /*
@@ -24,6 +25,6 @@ return [
     |
     */
     'drivers' => [
-        'translatable' => App\Support\QueryDrivers\TranslationDriver::class,
+        'translatable' => TranslationDriver::class,
     ],
 ];
