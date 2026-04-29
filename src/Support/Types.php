@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Victormgomes\QueryParams\Helpers;
+namespace Victormgomes\QueryParams\Support;
 
 use Victormgomes\QueryParams\Enums\AbstractType;
 use Victormgomes\QueryParams\Enums\AssociatedIndex;
@@ -23,15 +23,14 @@ class Types
     public static function resolveType(string $databaseType): string
     {
         $map = TypesMap::abstract();
+        $databaseType = strtolower($databaseType);
 
         return $map[$databaseType] ?? AbstractType::STRING;
     }
 
     public static function getColumnTypes(array $table): array
     {
-
         $columns = $table[AssociatedIndex::COLUMNS];
-
         $columnsTypes = [];
 
         foreach ($columns as $column) {

@@ -4,35 +4,52 @@ declare(strict_types=1);
 
 namespace Victormgomes\QueryParams\Enums;
 
-use ReflectionClass;
-
 final class RuleType
 {
     public const STRING = 'string';
+
+    public const INTEGER = 'integer';
 
     public const NUMERIC = 'numeric';
 
     public const BOOLEAN = 'boolean';
 
+    public const DATE = 'date';
+
     public const ARRAY = 'array';
-
-    public const SOMETIMES = 'sometimes';
-
-    public const SIZE_2 = 'size:2';
-
-    public const REQUIRED = 'required';
-
-    public const FILLED = 'filled';
 
     public const MIN_1 = 'min:1';
 
-    public static function build(string ...$rules): string
-    {
-        return implode('|', $rules);
-    }
+    public const SIZE_2 = 'size:2';
 
-    public static function toArray(): array
+    public const SOMETIMES = 'sometimes';
+
+    /**
+     * Build a validation rule string from multiple parts.
+     * Smart merging logic to prevent conflicting types.
+     */
+    public static function build(...$parts): string
     {
-        return array_values((new ReflectionClass(self::class))->getConstants());
+        $rules = [];
+
+        foreach ($parts as $part) {
+            if (is_string($part)) {
+                $rules = array_merge($rules, explode('|', $part));
+            } elseif (is_array($part)) {
+                $rules = array_merge($rules, $part);
+            }
+        }
+
+        $rules = array_unique($rules);
+
+        // Conflict Resolution: If we have a specific DB type (int/bool),
+        // remove the generic 'string' type usually provided by the operator map.
+        $hasSpecificType = count(array_intersect($rules, [self::INTEGER, self::NUMERIC, self::BOOLEAN, self::DATE])) > 0;
+
+        if ($hasSpecificType) {
+            $rules = array_diff($rules, [self::STRING]);
+        }
+
+        return implode('|', array_filter($rules));
     }
 }

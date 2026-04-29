@@ -2,14 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Victormgomes\QueryParams\Helpers\Builder\Operations;
+namespace Victormgomes\QueryParams\Support\Builder\Operations;
 
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Victormgomes\QueryParams\Enums\Operators;
 
 class Filter
 {
-    public static function build(Builder $query, string $field, string $operator, $value): void
+    public static function build(EloquentBuilder|QueryBuilder $query, string $field, string $operator, $value): void
     {
         switch ($operator) {
             case Operators::EQ:

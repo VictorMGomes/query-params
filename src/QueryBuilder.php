@@ -4,139 +4,255 @@ declare(strict_types=1);
 
 namespace Victormgomes\QueryParams;
 
+use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Validation\ValidationException;
+use Victormgomes\QueryParams\Contracts\FieldResolver;
 use Victormgomes\QueryParams\Enums\AssociatedIndex;
-use Victormgomes\QueryParams\Helpers\Builder\Operations\Filter;
-use Victormgomes\QueryParams\Helpers\ClassLoader;
+use Victormgomes\QueryParams\Enums\Operators;
+use Victormgomes\QueryParams\Support\Builder\Operations\Filter;
+use Victormgomes\QueryParams\Support\ClassLoader;
+use Victormgomes\QueryParams\Support\Resource;
 
 class QueryBuilder
 {
-    public static function build(string $modelFQCN, FormRequest $request): LengthAwarePaginator
+    /**
+     * Normalize fancy URL parameters to standard nested array structure.
+     */
+    public static function normalize(FormRequest|Request $request, ?string $modelFQCN = null): void
     {
-        $extra_parameters = array_diff(array_keys($request->all()), array_keys($request->rules()));
+        $data = $request->all();
 
-        if (! empty($extra_parameters)) {
-            throw ValidationException::withMessages([
-                'extra_fields' => 'Unexpected parameter(s) key(s): '.implode(', ', $extra_parameters),
-            ]);
+        // 1. Includes
+        $data[AssociatedIndex::INCLUDES] = self::parseSentence(
+            $data[AssociatedIndex::INCLUDE] ?? $data[AssociatedIndex::INCLUDES] ?? [],
+            fn ($val) => trim($val)
+        );
+        unset($data[AssociatedIndex::INCLUDE]);
+
+        // 2. Sorts
+        $data[AssociatedIndex::SORTS] = self::parseKeyValueSentence(
+            $data[AssociatedIndex::SORT] ?? $data[AssociatedIndex::SORTS] ?? [],
+            'asc'
+        );
+        unset($data[AssociatedIndex::SORT]);
+
+        // 3. Fields
+        $data[AssociatedIndex::FIELDS] = self::parseSentence(
+            $data[AssociatedIndex::FIELD] ?? $data[AssociatedIndex::FIELDS] ?? [],
+            fn ($val) => trim($val)
+        );
+        unset($data[AssociatedIndex::FIELD]);
+
+        // 4. Filters
+        $filters = self::parseFilterSentence(
+            $data[AssociatedIndex::FILTER] ?? $data[AssociatedIndex::FILTERS] ?? []
+        );
+
+        // Ensure all filters have an operator
+        foreach ($filters as $field => $value) {
+            if (! is_array($value)) {
+                $filters[$field] = [Operators::EQ => $value];
+            }
+        }
+        $data[AssociatedIndex::FILTERS] = $filters;
+        unset($data[AssociatedIndex::FILTER]);
+
+        // 5. Pagination
+        $pageData = $data[AssociatedIndex::PAGE] ?? [];
+        if (is_string($pageData)) {
+            $data[AssociatedIndex::PAGE] = self::parseKeyValueSentence($pageData);
         }
 
-        $validatedData = $request->validated();
-
-        // Normalize {field}{op} => [field][op]
-        $validated = collect($validatedData)->mapWithKeys(function ($value, $key) {
-            $normalizedKey = preg_replace('/\{([^}]+)\}/', '[$1]', $key);
-
-            return [$normalizedKey => $value];
-        })->toArray();
-
-        // Convert the array-like string keys into an actual nested array
-        $realArray = [];
-        foreach ($validated as $key => $value) {
-            $keys = preg_split('/\[([^\]]+)\]/', $key, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
-
-            if ($keys == false) {
-                $keys = [];
-            }
-
-            $current = &$realArray;
-            foreach ($keys as $k) {
-                if (! isset($current[$k])) {
-                    $current[$k] = [];
-                }
-                $current = &$current[$k];
-            }
-            $current = $value;
+        if (isset($data[AssociatedIndex::LIMIT])) {
+            $data[AssociatedIndex::PAGE] = (array) ($data[AssociatedIndex::PAGE] ?? []);
+            $data[AssociatedIndex::PAGE][AssociatedIndex::LIMIT] = $data[AssociatedIndex::LIMIT];
+            unset($data[AssociatedIndex::LIMIT]);
         }
 
+        // 6. Type Casting Intelligence (If model is known)
+        if ($modelFQCN) {
+            $data = self::castDataTypes($data, $modelFQCN);
+        }
+
+        $request->replace($data);
+    }
+
+    private static function castDataTypes(array $data, string $modelFQCN): array
+    {
+        $resources = Resource::generate($modelFQCN);
+        $filters = $data[AssociatedIndex::FILTERS] ?? [];
+
+        foreach ($filters as $field => $ops) {
+            $type = $resources['filters'][$field]['type'] ?? 'string';
+
+            foreach ($ops as $op => $val) {
+                $data[AssociatedIndex::FILTERS][$field][$op] = self::castValue($val, $type);
+            }
+        }
+
+        return $data;
+    }
+
+    private static function castValue(mixed $value, string $type): mixed
+    {
+        if (is_array($value)) {
+            return array_map(fn ($v) => self::castValue($v, $type), $value);
+        }
+
+        return match ($type) {
+            'integer' => (int) $value,
+            'numeric', 'float' => (float) $value,
+            'boolean' => filter_var($value, FILTER_VALIDATE_BOOLEAN),
+            'date', 'datetime' => Carbon::parse((string) $value),
+            default => $value,
+        };
+    }
+
+    public static function build(string $modelFQCN, FormRequest|Request $request): LengthAwarePaginator
+    {
+        $allKeys = array_keys(Arr::dot($request->all()));
+        $ruleKeys = array_keys(($request instanceof FormRequest && method_exists($request, 'rules')) ? $request->rules() : []);
+
+        if (! empty($ruleKeys)) {
+            $normalizedInputKeys = array_map(fn ($key) => preg_replace('/\.\d+$/', '.*', $key), $allKeys);
+            $extra_parameters = array_diff($normalizedInputKeys, $ruleKeys);
+
+            if (! empty($extra_parameters)) {
+                $actualExtras = array_values(array_intersect_key($allKeys, array_intersect($normalizedInputKeys, $extra_parameters)));
+                throw ValidationException::withMessages([
+                    'extra_fields' => 'Unexpected parameter(s) key(s): '.implode(', ', $actualExtras),
+                ]);
+            }
+        }
+
+        $validated = $request instanceof FormRequest ? $request->validated() : $request->all();
         $model = ClassLoader::instanceModel($modelFQCN);
         $query = $model->newQuery();
-
-        // --- Configuração de Translatable ---
-        // Detecta se o model usa translatable e define quais campos são traduzíveis
-        $translatableFields = [];
         $locale = app()->getLocale();
 
-        if (property_exists($model, 'translatable') && is_array($model->translatable)) {
-            $translatableFields = $model->translatable;
+        /** @var class-string<FieldResolver>|null $driverClass */
+        $driverClass = Config::get('query-params.drivers.translatable');
+        $driver = $driverClass ? new $driverClass : null;
+
+        // Apply Filters
+        if ($filters = $validated[AssociatedIndex::FILTERS] ?? null) {
+            self::applyFilters($query, (array) $filters, $locale, $driver);
         }
 
-        // --- Filters ---
-        // Mantido: O filtro deve ocorrer no nível do banco de dados (SQL)
-        if (isset($realArray[AssociatedIndex::FILTERS]) && is_array($realArray[AssociatedIndex::FILTERS])) {
-            foreach ($realArray[AssociatedIndex::FILTERS] as $field => $conditions) {
-                if (! is_array($conditions)) {
-                    continue;
-                }
-
-                $targetField = in_array($field, $translatableFields)
-                    ? "{$field}->{$locale}"
-                    : $field;
-
-                foreach ($conditions as $operator => $value) {
-                    Filter::build($query, $targetField, $operator, $value);
+        // Apply Sorts
+        if ($sorts = $validated[AssociatedIndex::SORTS] ?? null) {
+            foreach (self::flattenToDotNotation((array) $sorts) as $field => $dir) {
+                $applied = $driver ? $driver->applySort($query, $field, $dir, $locale) : false;
+                if (! $applied) {
+                    $query->orderBy($field, $dir);
                 }
             }
         }
 
-        // --- Sorting ---
-        // Mantido: A ordenação deve ocorrer no nível do banco de dados (SQL)
-        if (isset($realArray[AssociatedIndex::SORTS])) {
-            foreach ($realArray[AssociatedIndex::SORTS] as $field => $direction) {
-                $targetField = in_array($field, $translatableFields)
-                    ? "{$field}->{$locale}"
-                    : $field;
-
-                $query->orderBy($targetField, $direction);
-            }
+        // Apply Fields
+        if ($fields = $validated[AssociatedIndex::FIELDS] ?? null) {
+            $query->select((array) $fields);
         }
 
-        // --- Field Selection (CORRIGIDO) ---
-        // Alterado: Removemos a transformação SQL "-> as".
-        // Selecionamos o JSON puro para garantir a hidratação correta do Model.
-        if (isset($realArray[AssociatedIndex::FIELDS])) {
-            $fields = $realArray[AssociatedIndex::FIELDS];
-            if (is_array($fields)) {
-                $requestedFields = array_keys($fields);
-                $query->select($requestedFields);
-            }
+        // Apply Includes
+        if ($includes = $validated[AssociatedIndex::INCLUDES] ?? null) {
+            $query->with((array) $includes);
         }
 
-        // Includes / Relations
-        if (isset($realArray[AssociatedIndex::INCLUDES])) {
-            $includes = $realArray[AssociatedIndex::INCLUDES];
-            if (is_array($includes)) {
-                $query->with(array_keys($includes));
-            }
-        }
+        $page = (array) ($validated[AssociatedIndex::PAGE] ?? []);
+        $paginator = $query->paginate(
+            (int) ($page[AssociatedIndex::LIMIT] ?? 10),
+            ['*'],
+            AssociatedIndex::PAGE,
+            (int) ($page[AssociatedIndex::NUMBER] ?? 1)
+        );
 
-        $page = isset($realArray[AssociatedIndex::PAGE]) ? (array) $realArray[AssociatedIndex::PAGE] : [];
-        $page_limit = isset($page[AssociatedIndex::LIMIT]) ? (int) $page[AssociatedIndex::LIMIT] : 10;
-        $page_number = isset($page[AssociatedIndex::NUMBER]) ? (int) $page[AssociatedIndex::NUMBER] : 1;
-
-        $paginator = $query->paginate($page_limit, ['*'], AssociatedIndex::PAGE, $page_number);
-
-        // --- Transformação de Saída (NOVO) ---
-        // Intercepta os itens da página atual e converte os campos translatable para string
-        if (! empty($translatableFields)) {
-            $paginator->through(function ($item) use ($translatableFields, $locale) {
-                // Converte o model para array (respeitando $visible/$hidden)
-                $data = $item->toArray();
-
-                foreach ($translatableFields as $field) {
-                    // Se o campo existe no array final (foi selecionado), aplicamos a tradução
-                    if (array_key_exists($field, $data)) {
-                        // Usa o método getTranslation do pacote Spatie para pegar a string correta
-                        $data[$field] = $item->getTranslation($field, $locale);
-                    }
-                }
-
-                return $data;
-            });
+        if ($driver) {
+            $paginator->through(fn ($item) => $driver->translateItem($item, $locale));
         }
 
         return $paginator;
+    }
+
+    private static function parseSentence(mixed $input, callable $callback): array
+    {
+        if (is_string($input)) {
+            return array_map($callback, explode(',', $input));
+        }
+
+        return (array) $input;
+    }
+
+    private static function parseKeyValueSentence(mixed $input, ?string $defaultVal = null): array
+    {
+        if (! is_string($input)) {
+            return (array) $input;
+        }
+
+        $result = [];
+        foreach (explode(',', $input) as $pair) {
+            $parts = explode(':', $pair);
+            $key = trim($parts[0]);
+            $result[$key] = isset($parts[1]) ? trim($parts[1]) : $defaultVal;
+        }
+
+        return $result;
+    }
+
+    private static function parseFilterSentence(mixed $input): array
+    {
+        if (! is_string($input)) {
+            return (array) $input;
+        }
+
+        $result = [];
+        foreach (explode(',', $input) as $pair) {
+            $parts = explode(':', $pair);
+            $field = trim($parts[0]);
+            if (count($parts) === 3) {
+                $result[$field][trim($parts[1])] = trim($parts[2]);
+            } elseif (count($parts) === 2) {
+                $result[$field][Operators::EQ] = trim($parts[1]);
+            }
+        }
+
+        return $result;
+    }
+
+    private static function applyFilters($query, array $filters, string $locale, ?FieldResolver $driver, string $prefix = ''): void
+    {
+        foreach ($filters as $key => $value) {
+            if (Operators::tryFrom((string) $key)) {
+                $applied = $driver ? $driver->applyFilter($query, $prefix, (string) $key, $value, $locale) : false;
+                if (! $applied) {
+                    Filter::build($query, $prefix, (string) $key, $value);
+                }
+
+                continue;
+            }
+            if (is_array($value)) {
+                self::applyFilters($query, $value, $locale, $driver, $prefix === '' ? (string) $key : $prefix.'.'.$key);
+            }
+        }
+    }
+
+    private static function flattenToDotNotation(array $array, string $prefix = ''): array
+    {
+        $result = [];
+        foreach ($array as $key => $value) {
+            $newKey = $prefix === '' ? (string) $key : $prefix.'.'.$key;
+            if (is_array($value)) {
+                $result = array_merge($result, self::flattenToDotNotation($value, $newKey));
+            } else {
+                $result[$newKey] = $value;
+            }
+        }
+
+        return $result;
     }
 }

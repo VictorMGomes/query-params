@@ -4,26 +4,33 @@ declare(strict_types=1);
 
 namespace Victormgomes\QueryParams;
 
-use Illuminate\Support\Facades\Log;
-use Victormgomes\QueryParams\Facades\Resource;
-use Victormgomes\QueryParams\Facades\Rules as FacadesRules;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Config;
+use Victormgomes\QueryParams\Support\Resource;
+use Victormgomes\QueryParams\Support\RuleGenerator;
 
 class Rules
 {
     public static function generate(string $modelFQCN): array
     {
-        $start = microtime(true);
+        $enabled = Config::get('query-params.caching.enabled', true);
+        $force = Config::get('query-params.force_cache', false);
+        $isProduction = Config::get('app.env') === 'production';
 
+        if (! ($enabled && ($isProduction || $force))) {
+            return self::buildRules($modelFQCN);
+        }
+
+        $cacheKey = 'query-params.rules.'.md5($modelFQCN);
+        $ttl = Config::get('query-params.caching.ttl', 3600);
+
+        return Cache::remember($cacheKey, $ttl, fn () => self::buildRules($modelFQCN));
+    }
+
+    private static function buildRules(string $modelFQCN): array
+    {
         $resources = Resource::generate($modelFQCN);
 
-        $rules = FacadesRules::generate($resources);
-
-        $end = microtime(true);
-
-        $duration = $end - $start;
-
-        Log::info("Rules generation for {$modelFQCN} took {$duration} seconds.");
-
-        return $rules;
+        return RuleGenerator::generate($resources);
     }
 }

@@ -12,11 +12,15 @@ final class AbstractType
 
     public const INTEGER = 'integer';
 
+    public const FLOAT = 'float';
+
     public const NUMERIC = 'numeric';
 
     public const BOOLEAN = 'boolean';
 
     public const DATE = 'date';
+
+    public const DATETIME = 'datetime';
 
     public const ARRAY = 'array';
 
