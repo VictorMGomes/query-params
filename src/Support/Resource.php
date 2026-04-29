@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Victormgomes\QueryParams\Support;
 
+use Illuminate\Database\Eloquent\ModelInfo;
 use Illuminate\Database\Eloquent\ModelInspector;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Config;
@@ -23,7 +24,7 @@ class Resource
         // Use configured metadata connection if none provided
         $connection ??= Config::get('query-params.metadata_connection');
 
-        /** @var \Illuminate\Database\Eloquent\ModelInfo $modelInfo */
+        /** @var ModelInfo $modelInfo */
         $modelInfo = $inspector->inspect($modelFQCN, $connection);
 
         $attributes = [];
