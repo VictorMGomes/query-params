@@ -110,12 +110,12 @@
         "check:php": "vendor/bin/pint --test",
         "check:php:ci": "vendor/bin/pint --test --format=json",
         "format:php": "vendor/bin/pint",
-        "check:markdown": "npx --yes prettier --check '**/*.md' '!vendor/**' '!CHANGELOG.md' --no-error-on-unmatched-pattern && npx --yes markdownlint-cli2 '**/*.md' '#vendor' '#CHANGELOG.md'",
-        "format:markdown": "npx --yes prettier --write '**/*.md' '!vendor/**' '!CHANGELOG.md' --no-error-on-unmatched-pattern && npx --yes markdownlint-cli2 --fix '**/*.md' '#vendor' '#CHANGELOG.md'",
-        "check:json": "npx --yes prettier --check '**/*.json' '!vendor/**' --no-error-on-unmatched-pattern",
-        "format:json": "npx --yes prettier --write '**/*.json' '!vendor/**' --no-error-on-unmatched-pattern",
-        "check:yaml": "npx --yes prettier --check '**/*.yml' '**/*.yaml' '!vendor/**' --no-error-on-unmatched-pattern",
-        "format:yaml": "npx --yes prettier --write '**/*.yml' '**/*.yaml' '!vendor/**' --no-error-on-unmatched-pattern",
+        "check:markdown": "npx --yes prettier --check '**/*.md' --no-error-on-unmatched-pattern && npx --yes markdownlint-cli2 '**/*.md'",
+        "format:markdown": "npx --yes prettier --write '**/*.md' --no-error-on-unmatched-pattern && npx --yes markdownlint-cli2 --fix '**/*.md'",
+        "check:json": "npx --yes prettier --check '**/*.json' --no-error-on-unmatched-pattern",
+        "format:json": "npx --yes prettier --write '**/*.json' --no-error-on-unmatched-pattern",
+        "check:yaml": "npx --yes prettier --check '**/*.yml' '**/*.yaml' --no-error-on-unmatched-pattern",
+        "format:yaml": "npx --yes prettier --write '**/*.yml' '**/*.yaml' --no-error-on-unmatched-pattern",
         "check:types": "vendor/bin/phpstan analyse --memory-limit=512M",
         "check:requires": "vendor/bin/composer-require-checker check",
         "check:requires:ci": "vendor/bin/composer-require-checker check --output=json",
@@ -127,11 +127,11 @@
         "refactor:apply": "vendor/bin/rector process",
         "act:clean": "sudo docker rm -f $(sudo docker ps -aq -f name='^act-') 2>/dev/null ; sudo docker volume rm $(sudo docker volume ls -q -f name='^act-') 2>/dev/null",
         "act:all": "sudo act 2>&1 | tee logs/act-all.txt ; composer run act:clean",
-        "act:lint": "sudo act -W .github/workflows/lint-infra.yml 2>&1 | tee logs/act-lint.txt ; composer run act:clean",
-        "act:tests": "sudo act -W .github/workflows/run-tests.yml 2>&1 | tee logs/act-tests.txt ; composer run act:clean",
-        "act:tests:single": "sudo act -W .github/workflows/run-tests.yml --matrix os:ubuntu-latest --matrix php:8.5 --matrix laravel:13.* --matrix stability:prefer-stable 2>&1 | tee logs/act-tests-single.txt ; composer run act:clean",
-        "act:quality": "sudo act -W .github/workflows/code-quality.yml 2>&1 | tee logs/act-quality.txt ; composer run act:clean",
-        "act:style": "sudo act -W .github/workflows/fix-php-code-style-issues.yml 2>&1 | tee logs/act-style.txt ; composer run act:clean"
+        "act:lint": "sudo act -j infra-lint 2>&1 | tee logs/act-lint.txt ; composer run act:clean",
+        "act:tests": "sudo act -j tests 2>&1 | tee logs/act-tests.txt ; composer run act:clean",
+        "act:tests:single": "sudo act -j tests --matrix os:ubuntu-latest --matrix php:8.5 --matrix laravel:13.* --matrix stability:prefer-stable 2>&1 | tee logs/act-tests-single.txt ; composer run act:clean",
+        "act:quality": "sudo act -j code-quality 2>&1 | tee logs/act-quality.txt ; composer run act:clean",
+        "act:style": "sudo act -j style-fix 2>&1 | tee logs/act-style.txt ; composer run act:clean"
     },
     "config": {
         "sort-packages": true,
@@ -152,6 +152,9 @@
             "aliases": {
                 "QueryEngine": "Victormgomes\\LaravelQueryEngine\\Facades\\QueryBuilder"
             }
+        },
+        "captainhook": {
+            "force-install": true
         }
     },
     "minimum-stability": "stable",

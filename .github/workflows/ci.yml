@@ -1,0 +1,36 @@
+name: CI/CD Pipeline
+
+on:
+    push:
+        branches:
+            - main
+        tags:
+            - "v*"
+    pull_request:
+        branches:
+            - main
+
+permissions:
+    contents: write
+    issues: write
+    pull-requests: write
+
+jobs:
+    code-quality:
+        uses: victormgomes/actions-workflows/.github/workflows/php-code-quality.yml@main
+
+    tests:
+        uses: victormgomes/actions-workflows/.github/workflows/laravel-package-tests.yml@main
+
+    infra-lint:
+        uses: victormgomes/actions-workflows/.github/workflows/infra-lint.yml@main
+
+    style-fix:
+        uses: victormgomes/actions-workflows/.github/workflows/php-style-fixer.yml@main
+        secrets: inherit
+
+    release:
+        needs: [code-quality, tests, infra-lint, style-fix]
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        uses: victormgomes/actions-workflows/.github/workflows/semantic-release.yml@main
+        secrets: inherit

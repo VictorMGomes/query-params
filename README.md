@@ -161,12 +161,12 @@ maintained and free!
 
 ## Community & Guidelines
 
-- [Upgrading Guide](UPGRADING.md)
-- [Changelog](CHANGELOG.md)
-- [Contributing](CONTRIBUTING.md)
-- [Code of Conduct](CODE_OF_CONDUCT.md)
-- [Security Policy](SECURITY.md)
-- [Support & Help](SUPPORT.md)
+- [Upgrading Guide](docs/UPGRADING.md)
+- [Changelog](docs/CHANGELOG.md)
+- [Contributing](.github/CONTRIBUTING.md)
+- [Code of Conduct](.github/CODE_OF_CONDUCT.md)
+- [Security Policy](.github/SECURITY.md)
+- [Support & Help](.github/SUPPORT.md)
 
 ---
 
