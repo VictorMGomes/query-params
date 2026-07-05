@@ -7,6 +7,7 @@
         "docs/CHANGELOG.md",
         "vendor/**",
         "node_modules/**",
-        "coverage/**"
+        "coverage/**",
+        ".agents/**"
     ]
 }
