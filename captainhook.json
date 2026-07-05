@@ -19,6 +19,9 @@
         "enabled": true,
         "actions": [
             {
+                "action": "bash -c 'LOCKED=$(awk \"!/^#/ && !/^$/ {print \\$1}\" .github/CODEOWNERS | sed \"s|^/||\"); for f in $(git diff --cached --name-only); do for l in $LOCKED; do if [[ \"$f\" == $l ]]; then echo \"\\n❌ ERROR: This file ($f) is locked by CODEOWNERS and can only be modified in the central repository: victormgomes/laravel-libs-shared\\n\"; exit 1; fi; done; done'"
+            },
+            {
                 "action": "composer validate --strict",
                 "options": []
             },
