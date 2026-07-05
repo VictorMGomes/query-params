@@ -12,13 +12,11 @@ queries based on Eloquent Models.
 [![PHP Versions](https://img.shields.io/badge/PHP-8.3_|_8.4_|_8.5-777BB4.svg?style=flat-square&logo=php)](https://php.net/)
 [![Laravel Versions](https://img.shields.io/badge/Laravel-12.x_|_13.x-22C55E.svg?style=flat-square&logo=laravel)](https://laravel.com/)
 
-[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/victormgomes/laravel-query-engine/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/victormgomes/laravel-query-engine/actions?query=workflow%3Arun-tests+branch%3Amain)
-[![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/victormgomes/laravel-query-engine/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/victormgomes/laravel-query-engine/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
-[![GitHub Code Quality Action Status](https://img.shields.io/github/actions/workflow/status/victormgomes/laravel-query-engine/code-quality.yml?branch=main&label=PHPStan%20%26%20Insights&style=flat-square)](https://github.com/victormgomes/laravel-query-engine/actions?query=workflow%3A"Code+Quality+%26+Static+Analysis"+branch%3Amain)
+[![Tests Status](https://img.shields.io/github/check-runs/victormgomes/laravel-query-engine/main?check_name=tests&label=tests&style=flat-square)](https://github.com/victormgomes/laravel-query-engine/actions/workflows/ci.yml)
+[![Code Style Status](https://img.shields.io/github/check-runs/victormgomes/laravel-query-engine/main?check_name=style-check&label=code%20style&style=flat-square)](https://github.com/victormgomes/laravel-query-engine/actions/workflows/ci.yml)
+[![Code Quality Status](https://img.shields.io/github/check-runs/victormgomes/laravel-query-engine/main?check_name=code-quality&label=PHPStan%20%26%20Insights&style=flat-square)](https://github.com/victormgomes/laravel-query-engine/actions/workflows/ci.yml)
 
 ## Why Use It?
-
-This package saves your time and tokens!
 
 Stop writing repetitive boilerplate for every index endpoint. `laravel-query-engine`
 acts as a seamless bridge between your HTTP requests and Eloquent.
