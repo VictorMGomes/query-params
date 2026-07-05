@@ -16,21 +16,47 @@ permissions:
     pull-requests: write
 
 jobs:
+    enforce-governance:
+        runs-on: ubuntu-latest
+        if: github.event_name == 'pull_request' && !startsWith(github.head_ref, 'chore/sync-master-files')
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                fetch-depth: 0
+            - name: Check for locked file modifications
+              run: |
+                # Lê os arquivos bloqueados dinamicamente do CODEOWNERS
+                LOCKED_FILES=$(awk '!/^#/ && !/^$/ {print $1}' .github/CODEOWNERS | sed 's|^/||')
+                CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }} HEAD)
+                
+                for file in $CHANGED_FILES; do
+                  for locked in $LOCKED_FILES; do
+                    regex="^${locked//./\\.}$"
+                    regex="${regex//\\*/.*}"
+                    if [[ "$locked" == */ ]]; then
+                      regex="^${locked//./\\.}.*"
+                    fi
+                    if [[ "$file" =~ $regex ]]; then
+                      echo "::error file=$file::❌ ERROR: This file ($file) can only be modified in the central repository: victormgomes/laravel-libs-shared"
+                      exit 1
+                    fi
+                  done
+                done
     code-quality:
-        uses: victormgomes/actions-workflows/.github/workflows/php-code-quality.yml@main
+        uses: victormgomes/laravel-libs-shared/.github/workflows/php-code-quality.yml@main
 
     tests:
-        uses: victormgomes/actions-workflows/.github/workflows/laravel-package-tests.yml@main
+        uses: victormgomes/laravel-libs-shared/.github/workflows/laravel-package-tests.yml@main
 
     infra-lint:
-        uses: victormgomes/actions-workflows/.github/workflows/infra-lint.yml@main
+        uses: victormgomes/laravel-libs-shared/.github/workflows/infra-lint.yml@main
 
     style-fix:
-        uses: victormgomes/actions-workflows/.github/workflows/php-style-fixer.yml@main
+        uses: victormgomes/laravel-libs-shared/.github/workflows/php-style-fixer.yml@main
         secrets: inherit
 
     release:
         needs: [code-quality, tests, infra-lint, style-fix]
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-        uses: victormgomes/actions-workflows/.github/workflows/semantic-release.yml@main
+        uses: victormgomes/laravel-libs-shared/.github/workflows/semantic-release.yml@main
         secrets: inherit
