@@ -51,12 +51,12 @@ jobs:
     infra-lint:
         uses: victormgomes/laravel-libs-shared/.github/workflows/infra-lint.yml@main
 
-    style-fix:
-        uses: victormgomes/laravel-libs-shared/.github/workflows/php-style-fixer.yml@main
+    style-check:
+        uses: victormgomes/laravel-libs-shared/.github/workflows/php-style-checker.yml@main
         secrets: inherit
 
     release:
-        needs: [code-quality, tests, infra-lint, style-fix]
+        needs: [code-quality, tests, infra-lint, style-check]
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         uses: victormgomes/laravel-libs-shared/.github/workflows/semantic-release.yml@main
         secrets: inherit
