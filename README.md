@@ -12,9 +12,9 @@ queries based on Eloquent Models.
 [![PHP Versions](https://img.shields.io/badge/PHP-8.3_|_8.4_|_8.5-777BB4.svg?style=flat-square&logo=php)](https://php.net/)
 [![Laravel Versions](https://img.shields.io/badge/Laravel-12.x_|_13.x-22C55E.svg?style=flat-square&logo=laravel)](https://laravel.com/)
 
-[![Tests Status](https://img.shields.io/github/check-runs/victormgomes/laravel-query-engine/main?check_name=tests&label=tests&style=flat-square)](https://github.com/victormgomes/laravel-query-engine/actions/workflows/ci.yml)
-[![Code Style Status](https://img.shields.io/github/check-runs/victormgomes/laravel-query-engine/main?check_name=style-check&label=code%20style&style=flat-square)](https://github.com/victormgomes/laravel-query-engine/actions/workflows/ci.yml)
-[![Code Quality Status](https://img.shields.io/github/check-runs/victormgomes/laravel-query-engine/main?check_name=code-quality&label=PHPStan%20%26%20Insights&style=flat-square)](https://github.com/victormgomes/laravel-query-engine/actions/workflows/ci.yml)
+[![Tests Status](https://img.shields.io/github/actions/workflow/status/victormgomes/laravel-query-engine/ci.yml?branch=main&label=tests&style=flat-square)](https://github.com/victormgomes/laravel-query-engine/actions/workflows/ci.yml)
+[![Code Style Status](https://img.shields.io/github/actions/workflow/status/victormgomes/laravel-query-engine/ci.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/victormgomes/laravel-query-engine/actions/workflows/ci.yml)
+[![Code Quality Status](https://img.shields.io/github/actions/workflow/status/victormgomes/laravel-query-engine/ci.yml?branch=main&label=PHPStan%20%26%20Insights&style=flat-square)](https://github.com/victormgomes/laravel-query-engine/actions/workflows/ci.yml)
 
 ## Why Use It?
 
