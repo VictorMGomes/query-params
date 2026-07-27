@@ -31,12 +31,22 @@ jobs:
                 
                 for file in $CHANGED_FILES; do
                   for locked in $LOCKED_FILES; do
-                    regex="^${locked//./\\.}$"
-                    regex="${regex//\\*/.*}"
-                    if [[ "$locked" == */ ]]; then
-                      regex="^${locked//./\\.}.*"
-                    fi
-                    if [[ "$file" =~ $regex ]]; then
+                    match=false
+                    case "$locked" in
+                      */)
+                        dir="${locked%/}"
+                        case "$file" in
+                          "$dir" | "$dir"/*) match=true ;;
+                        esac ;;
+                      *\*)
+                        # shellcheck disable=SC2254
+                        case "$file" in
+                          $locked) match=true ;;
+                        esac ;;
+                      *)
+                        [ "$file" = "$locked" ] && match=true ;;
+                    esac
+                    if $match; then
                       echo "::error file=$file::❌ ERROR: This file ($file) can only be modified in the central repository: victormgomes/laravel-libs-shared"
                       exit 1
                     fi
