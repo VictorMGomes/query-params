@@ -4,6 +4,7 @@ composer.lock
 
 # Frontend Assets
 /node_modules
+package-lock.json
 
 # Logs
 npm-debug.log
@@ -26,6 +27,10 @@ _ide_helper_models.php
 /.fleet
 /.vscode
 
+# VitePress
+docs/.vitepress/dist
+docs/.vitepress/cache
+
 # Misc
 phpunit.xml
 phpstan.neon
@@ -34,7 +39,3 @@ testbench.yaml
 .env
 .env.backup
 .DS_Store
-
-# VitePress
-docs/.vitepress/dist
-docs/.vitepress/cache
