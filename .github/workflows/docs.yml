@@ -1,0 +1,21 @@
+name: Deploy Documentation
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  docs:
+    uses: victormgomes/laravel-libs-shared/.github/workflows/vitepress-docs.yml@main
+    with:
+      docs_dir: 'docs'

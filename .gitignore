@@ -34,3 +34,7 @@ testbench.yaml
 .env
 .env.backup
 .DS_Store
+
+# VitePress
+docs/.vitepress/dist
+docs/.vitepress/cache
