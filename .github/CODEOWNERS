@@ -1,5 +1,7 @@
 # GitHub Actions & Configs
 /.github/workflows/ci.yml         @victormgomes
+/.github/workflows/docs.yml       @victormgomes
+/.github/workflows/auto-approve.yml @victormgomes
 /.github/dependabot.yml           @victormgomes
 /.github/PULL_REQUEST_TEMPLATE.md @victormgomes
 /.github/ISSUE_TEMPLATE/          @victormgomes
@@ -9,6 +11,9 @@
 /.prettierrc*                     @victormgomes
 /.prettierignore                  @victormgomes
 /.markdownlint-cli2.jsonc         @victormgomes
+/.gitattributes                   @victormgomes
+/.gitignore                       @victormgomes
+/.releaserc.json                  @victormgomes
 /captainhook.json                 @victormgomes
 /composer-require-checker.json    @victormgomes
 /infection.json.dist              @victormgomes
@@ -16,8 +21,13 @@
 /phpstan.neon.dist                @victormgomes
 /phpunit.xml.dist                 @victormgomes
 /rector.php                       @victormgomes
+/package.json                     @victormgomes
 
 # DevOps & Docker
 /Dockerfile                       @victormgomes
 /docker-compose.yml               @victormgomes
 /.actrc                           @victormgomes
+
+# Community & Legal
+/LICENSE.md                       @victormgomes
+/community/                       @victormgomes
