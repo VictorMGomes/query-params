@@ -160,7 +160,7 @@ maintained and free!
 ## Community & Guidelines
 
 - [Upgrading Guide](docs/UPGRADING.md)
-- [Changelog](docs/CHANGELOG.md)
+- [Changelog](https://github.com/victormgomes/laravel-query-engine/releases)
 - [Contributing](.github/CONTRIBUTING.md)
 - [Code of Conduct](.github/CODE_OF_CONDUCT.md)
 - [Security Policy](.github/SECURITY.md)
