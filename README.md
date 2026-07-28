@@ -139,14 +139,14 @@ and pagination automatically applied.
 ## Documentation
 
 For a deep dive into the features, please read the
-[Official Documentation](docs/index.md).
+[Official Documentation](https://laravel-query-engine.victormgomes.net/).
 
 ---
 
 ## Credits
 
 - [Victor M. Gomes](https://github.com/victormgomes)
-- [All Contributors](../../contributors)
+- [All Contributors](https://github.com/victormgomes/laravel-query-engine/graphs/contributors)
 
 ## Support Us
 
@@ -159,12 +159,12 @@ maintained and free!
 
 ## Community & Guidelines
 
-- [Upgrading Guide](docs/UPGRADING.md)
+- [Upgrading Guide](https://laravel-query-engine.victormgomes.net/UPGRADING)
 - [Changelog](https://github.com/victormgomes/laravel-query-engine/releases)
-- [Contributing](.github/CONTRIBUTING.md)
-- [Code of Conduct](.github/CODE_OF_CONDUCT.md)
-- [Security Policy](.github/SECURITY.md)
-- [Support & Help](.github/SUPPORT.md)
+- [Contributing](https://github.com/victormgomes/laravel-query-engine/blob/main/.github/CONTRIBUTING.md)
+- [Code of Conduct](https://github.com/victormgomes/laravel-query-engine/blob/main/.github/CODE_OF_CONDUCT.md)
+- [Security Policy](https://github.com/victormgomes/laravel-query-engine/blob/main/.github/SECURITY.md)
+- [Support & Help](https://github.com/victormgomes/laravel-query-engine/blob/main/.github/SUPPORT.md)
 
 ---
 
