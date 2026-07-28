@@ -33,7 +33,7 @@ export default defineConfig({
       {
         text: 'Resources',
         items: [
-          { text: 'Changelog', link: '/CHANGELOG' },
+          { text: 'Changelog', link: 'https://github.com/victormgomes/laravel-query-engine/releases' },
           { text: 'Upgrading', link: '/UPGRADING' },
         ]
       }
