@@ -1,51 +1,57 @@
 # Contributing
 
-Thank you for considering contributing to `victormgomes/laravel-query-engine`!
+Thank you for considering contributing! This document covers the contribution
+workflow that applies to all packages in this ecosystem.
 
-## Local Development
+## Contribution Workflow
 
-You can execute all commands directly on your host machine if you have PHP and
-Node.js installed, or you can use the provided isolated Docker environment.
+### 1. Open an Issue First
 
-1. Clone the repository.
-2. Run `composer install` (or `docker compose run --rm dev composer install`).
-3. Run `composer run prepare` to setup the Testbench environment.
+For non-trivial changes (features, bug fixes, refactoring), **open an issue
+before starting work**. This helps align on the approach and prevents wasted
+effort. Small fixes (typos, broken links) can go directly to a Pull Request.
 
-## Code Style & Linting
+### 2. Fork or Branch
 
-This package enforces strict linting for PHP (Laravel Pint), Markdown
-(markdownlint & Prettier), JSON, and YAML. Before opening a Pull Request, please
-run:
+| Your access | Workflow |
+|---|---|
+| **External contributor** | Fork the repository, create a feature branch in your fork |
+| **Trusted collaborator** (write access) | Create a feature branch directly in the main repository |
 
-```bash
-composer run format:all
-```
-
-## Static Analysis
-
-We enforce strict static analysis using [PHPStan](https://phpstan.org/). Ensure
-your changes pass level 5 analysis:
+### 3. Create a Feature Branch
 
 ```bash
-composer run check:types
+git checkout -b feat/your-feature-name
 ```
 
-## Testing
+### 4. Make Changes & Ensure Quality
 
-This package uses [Pest](https://pestphp.com/) for testing. All PRs must
-maintain or improve test coverage.
-
-To run the test suite:
+Run the QA checks before opening a PR:
 
 ```bash
-composer run test
+docker compose run --rm dev composer run format:all
+docker compose run --rm dev composer run test
+docker compose run --rm dev composer run check:types
 ```
 
-## Pull Requests
+### 5. Submit a Pull Request
 
 - Provide a clear, descriptive title.
 - Explain _why_ you are making the change.
-- Follow **Conventional Commits** for your commit messages (e.g., `feat:`, `fix:`, `docs:`, `chore:`).
-- For **Breaking Changes**, use an exclamation mark `!` after the type/scope (e.g., `feat!: rewrite core logic` or `refactor!: rename attribute`). This triggers a major version release.
-- Ensure all tests and static analysis checks are passing.
+- **Link the PR to the issue** (e.g., `Closes #123`).
+- Follow **Conventional Commits** for your commit messages (e.g., `feat:`,
+  `fix:`, `docs:`, `chore:`).
+- For **Breaking Changes**, use `!` after the type/scope (e.g.,
+  `feat!: rewrite core logic`). This triggers a major version release.
 - Keep the PR focused on a single feature or bug fix.
+
+## AI-Assisted Development
+
+This project includes AI guidelines for coding assistants. If you are using an
+AI tool to help with your contribution, please refer to:
+
+- `.agents/AGENTS.md` — General coding standards and commit conventions
+- `.agents/skills/development_workflow/SKILL.md` — Docker commands and QA checks
+
+These guidelines ensure AI-assisted contributions follow the same standards as
+manual contributions.
