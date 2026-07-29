@@ -24,3 +24,26 @@ features:
   - title: 🛠 Developer Friendly
     details: Clean URL syntax, simple integration into Eloquent models.
 ---
+
+<br>
+
+# 🚀 Quick Start
+
+## 1. Install the package
+
+```bash
+composer require victormgomes/laravel-query-engine
+```
+
+## 2. Annotate your FormRequest with the attribute and trait
+
+```php
+use Victormgomes\LaravelQueryEngine\Attributes\MapQueryEngine;
+use Victormgomes\LaravelQueryEngine\Traits\HasQueryEngineRules;
+
+#[MapQueryEngine(User::class)]
+class IndexUserRequest extends FormRequest
+{
+    use HasQueryEngineRules;
+}
+```
