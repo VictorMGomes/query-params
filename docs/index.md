@@ -25,8 +25,6 @@ features:
     details: Clean URL syntax, simple integration into Eloquent models.
 ---
 
-<br>
-
 # 🚀 Quick Start
 
 ## 1. Install the package
