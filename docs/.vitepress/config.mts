@@ -3,6 +3,9 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: "Laravel Query Engine",
   description: "Schema-aware API filtering engine for Laravel.",
+  head: [
+    ['style', {}, '.VPHomeFeatures { margin-bottom: 64px; }']
+  ],
   themeConfig: {
     search: {
       provider: 'local'
