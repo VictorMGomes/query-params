@@ -40,7 +40,9 @@ class QueryOptions
         public ?array $disableIncludes = null,
         public ?array $allowedFields = null,
         public ?array $disableFields = null,
+        /** @var array<string> */
         public array $allowedScopes = [],
+        /** @var array<string> */
         public array $allowedAggregations = [],
         public ?array $allowedOperators = null,
         public ?array $disableOperators = null

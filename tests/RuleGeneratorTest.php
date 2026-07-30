@@ -2,15 +2,21 @@
 
 declare(strict_types=1);
 
+use Victormgomes\LaravelQueryEngine\Support\Resource\FieldConfig;
+use Victormgomes\LaravelQueryEngine\Support\Resource\FilterConfig;
+use Victormgomes\LaravelQueryEngine\Support\Resource\PaginationConfig;
+use Victormgomes\LaravelQueryEngine\Support\Resource\ResourceConfig;
+use Victormgomes\LaravelQueryEngine\Support\Resource\SortConfig;
 use Victormgomes\LaravelQueryEngine\Support\RuleGenerator;
 
 it('generates basic rules when resources are empty', function (): void {
-    $resources = [
-        'filters' => [],
-        'sorts' => [],
-        'fields' => [],
-        'includes' => [],
-    ];
+    $resources = new ResourceConfig(
+        filters: [],
+        sorts: [],
+        pagination: new PaginationConfig(keys: [], defaults: []),
+        fields: [],
+        includes: [],
+    );
 
     $rules = RuleGenerator::generate($resources);
 
@@ -21,12 +27,13 @@ it('generates basic rules when resources are empty', function (): void {
 });
 
 it('generates specific array rules when resources have items', function (): void {
-    $resources = [
-        'filters' => ['name' => ['operations' => ['eq'], 'type' => 'string']],
-        'sorts' => ['created_at' => ['operations' => ['asc', 'desc']]],
-        'fields' => ['id', 'name'],
-        'includes' => ['author'],
-    ];
+    $resources = new ResourceConfig(
+        filters: ['name' => new FilterConfig(type: 'string', operations: ['eq'])],
+        sorts: ['created_at' => new SortConfig(operations: ['asc', 'desc'])],
+        pagination: new PaginationConfig(keys: [], defaults: []),
+        fields: ['id' => new FieldConfig(operations: ['add']), 'name' => new FieldConfig(operations: ['add'])],
+        includes: [],
+    );
 
     $rules = RuleGenerator::generate($resources);
 

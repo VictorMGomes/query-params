@@ -31,7 +31,8 @@ class QueryBuilder
     use Macroable;
 
     /**
-     * @param  Builder|class-string<Model>  $queryOrModel
+     * @param  Builder<Model>|class-string<Model>  $queryOrModel
+     * @return Builder<Model>
      */
     public static function buildQuery(EloquentBuilder|string $queryOrModel, FormRequest|Request $request): EloquentBuilder
     {
@@ -45,12 +46,14 @@ class QueryBuilder
         }
 
         QueryNormalizer::normalize($request, $modelFQCN);
+        /** @var array<string, mixed> $validated */
         $validated = $request instanceof FormRequest ? $request->validated() : $request->all();
         $validated = self::castDataTypes($validated, $modelFQCN);
         $locale = app()->getLocale();
         $driver = QueryNormalizer::resolveDriver();
 
         if ($filters = $validated[AssociatedIndex::FILTERS->value] ?? null) {
+            /** @var array<string, array<string, mixed>> $filters */
             $filters = (array) $filters;
             if (in_array(SoftDeletes::class, class_uses_recursive($modelFQCN), true)) {
                 $withDeleted = filter_var($filters['with_deleted'][Operators::EQ->value] ?? false, FILTER_VALIDATE_BOOLEAN);
@@ -71,10 +74,12 @@ class QueryBuilder
             $normalFilters = [];
 
             foreach ($filters as $field => $ops) {
-                if (isset($resources['filters'][$field]['is_scope']) && $resources['filters'][$field]['is_scope']) {
+                $filterConfig = $resources->filters[$field] ?? null;
+
+                if ($filterConfig !== null && $filterConfig->isScope) {
                     $scopeValue = $ops[Operators::EQ->value] ?? null;
                     if ($scopeValue !== null && $scopeValue !== false && $scopeValue !== 'false' && $scopeValue !== '0') {
-                        if ($resources['filters'][$field]['type'] === 'boolean') {
+                        if ($filterConfig->type === 'boolean') {
                             $query->{$field}();
                         } else {
                             $query->{$field}($scopeValue);
@@ -92,9 +97,10 @@ class QueryBuilder
 
         if ($sorts = $validated[AssociatedIndex::SORTS->value] ?? null) {
             foreach (Arr::dot((array) $sorts) as $field => $dir) {
-                $applied = $driver ? $driver->applySort($query, $field, $dir, $locale) : false;
+                $direction = is_scalar($dir) && in_array((string) $dir, ['asc', 'desc'], true) ? (string) $dir : 'asc';
+                $applied = $driver ? $driver->applySort($query, $field, $direction, $locale) : false;
                 if (! $applied) {
-                    $query->orderBy($field, $dir);
+                    $query->orderBy($field, $direction);
                 }
             }
         }
@@ -104,13 +110,21 @@ class QueryBuilder
             $realFields = [];
             $aggregations = [];
 
-            foreach ((array) $fields as $field) {
-                if ($resources['fields'][$field]['is_accessor'] ?? false) {
+            /** @var array<int, string> $fieldList */
+            $fieldList = (array) $fields;
+            foreach ($fieldList as $field) {
+                $fieldConfig = $resources->fields[$field] ?? null;
+
+                if ($fieldConfig === null) {
                     continue;
                 }
 
-                if ($resources['fields'][$field]['is_aggregation'] ?? false) {
-                    $aggregations[] = $resources['fields'][$field];
+                if ($fieldConfig->isAccessor) {
+                    continue;
+                }
+
+                if ($fieldConfig->isAggregation) {
+                    $aggregations[] = $fieldConfig;
 
                     continue;
                 }
@@ -123,28 +137,34 @@ class QueryBuilder
             }
 
             foreach ($aggregations as $agg) {
-                if ($agg['agg_type'] === 'count') {
-                    $query->withCount($agg['relation']);
-                } elseif ($agg['agg_type'] === 'exists') {
-                    $query->withExists($agg['relation']);
+                $aggType = $agg->aggType;
+                $relation = $agg->relation;
+                if ($aggType === null || $relation === null) {
+                    continue;
+                }
+                if ($aggType === 'count') {
+                    $query->withCount($relation);
+                } elseif ($aggType === 'exists') {
+                    $query->withExists($relation);
                 } else {
-                    $method = 'with'.ucfirst($agg['agg_type']);
-                    $query->{$method}($agg['relation'], $agg['column']);
+                    $method = 'with'.ucfirst($aggType);
+                    $query->{$method}($relation, $agg->column);
                 }
             }
         }
 
         if ($includes = $validated[AssociatedIndex::INCLUDES->value] ?? null) {
+            /** @var array<string, \Closure|string> $with */
             $with = [];
             foreach ((array) $includes as $key => $value) {
                 if (is_string($key) && is_array($value)) {
-                    $with[$key] = function ($query) use ($value): void {
+                    $with[$key] = function (EloquentBuilder $query) use ($value): void {
                         if (! empty($value['fields'])) {
-                            $query->select($value['fields']);
+                            $query->select((array) $value['fields']);
                         }
                     };
                 } else {
-                    $with[] = $value;
+                    $with[] = is_string($value) ? $value : (is_scalar($value) ? (string) $value : '');
                 }
             }
             $query->with($with);
@@ -154,7 +174,8 @@ class QueryBuilder
     }
 
     /**
-     * @param  Builder|class-string<Model>  $queryOrModel
+     * @param  Builder<Model>|class-string<Model>  $queryOrModel
+     * @return LengthAwarePaginator<int, Model>
      */
     public static function paginateQuery(EloquentBuilder|string $queryOrModel, FormRequest|Request $request): LengthAwarePaginator
     {
@@ -166,20 +187,25 @@ class QueryBuilder
         $locale = app()->getLocale();
         $driver = QueryNormalizer::resolveDriver();
 
+        /** @var array<string, mixed> $page */
         $page = (array) ($validated[AssociatedIndex::PAGE->value] ?? []);
+        $limit = $page[AssociatedIndex::LIMIT->value] ?? 10;
+        $number = $page[AssociatedIndex::NUMBER->value] ?? 1;
         $paginator = $query->paginate(
-            (int) ($page[AssociatedIndex::LIMIT->value] ?? 10),
+            is_numeric($limit) ? (int) $limit : 10,
             ['*'],
             AssociatedIndex::PAGE->value,
-            (int) ($page[AssociatedIndex::NUMBER->value] ?? 1)
+            is_numeric($number) ? (int) $number : 1
         );
 
         if ($fields = $validated[AssociatedIndex::FIELDS->value] ?? null) {
-            $resources = Resource::generate(get_class($query->getModel()));
+            /** @var class-string<Model> $modelFQCN */
+            $modelFQCN = get_class($query->getModel());
+            $resources = Resource::generate($modelFQCN);
             $accessorFields = [];
             foreach ((array) $fields as $field) {
-                if ($resources['fields'][$field]['is_accessor'] ?? false) {
-                    $accessorFields[] = $field;
+                if (is_scalar($field) && isset($resources->fields[(string) $field]) && $resources->fields[(string) $field]->isAccessor) {
+                    $accessorFields[] = (string) $field;
                 }
             }
             if (! empty($accessorFields)) {
@@ -195,7 +221,8 @@ class QueryBuilder
     }
 
     /**
-     * @param  Builder|class-string<Model>  $queryOrModel
+     * @param  Builder<Model>|class-string<Model>  $queryOrModel
+     * @return CursorPaginator<int, Model>
      */
     public static function cursorPaginateQuery(EloquentBuilder|string $queryOrModel, FormRequest|Request $request): CursorPaginator
     {
@@ -207,6 +234,7 @@ class QueryBuilder
         $locale = app()->getLocale();
         $driver = QueryNormalizer::resolveDriver();
 
+        /** @var array<string, mixed> $page */
         $page = (array) ($validated[AssociatedIndex::PAGE->value] ?? []);
 
         $cursorValue = $page['cursor'] ?? null;
@@ -215,19 +243,22 @@ class QueryBuilder
             $cursor = Cursor::fromEncoded($cursorValue);
         }
 
+        $cursorLimit = $page[AssociatedIndex::LIMIT->value] ?? 10;
         $cursorPaginator = $query->cursorPaginate(
-            (int) ($page[AssociatedIndex::LIMIT->value] ?? 10),
+            is_numeric($cursorLimit) ? (int) $cursorLimit : 10,
             ['*'],
             'page[cursor]',
             $cursor
         );
 
         if ($fields = $validated[AssociatedIndex::FIELDS->value] ?? null) {
-            $resources = Resource::generate(get_class($query->getModel()));
+            /** @var class-string<Model> $modelFQCN */
+            $modelFQCN = get_class($query->getModel());
+            $resources = Resource::generate($modelFQCN);
             $accessorFields = [];
             foreach ((array) $fields as $field) {
-                if ($resources['fields'][$field]['is_accessor'] ?? false) {
-                    $accessorFields[] = $field;
+                if (is_scalar($field) && isset($resources->fields[(string) $field]) && $resources->fields[(string) $field]->isAccessor) {
+                    $accessorFields[] = (string) $field;
                 }
             }
             if (! empty($accessorFields)) {
@@ -242,27 +273,38 @@ class QueryBuilder
         return $cursorPaginator;
     }
 
-    private static function applyFilters($query, array $filters, string $locale, ?FieldResolver $driver, string $prefix = ''): void
+    /**
+     * @param  EloquentBuilder<Model>|\Illuminate\Database\Query\Builder  $query
+     * @param  array<string, array<string, mixed>>  $filters
+     * @param  FieldResolver<Model>|null  $driver
+     */
+    private static function applyFilters(EloquentBuilder|\Illuminate\Database\Query\Builder $query, array $filters, string $locale, ?FieldResolver $driver, string $prefix = ''): void
     {
         foreach ($filters as $key => $value) {
             if (Operators::tryFrom((string) $key)) {
-                $applied = $driver ? $driver->applyFilter($query, $prefix, (string) $key, $value, $locale) : false;
+                $applied = $driver && $query instanceof EloquentBuilder ? $driver->applyFilter($query, $prefix, (string) $key, $value, $locale) : false;
                 if (! $applied) {
                     Filter::build($query, $prefix, (string) $key, $value);
                 }
 
                 continue;
             }
-            if (is_array($value)) {
-                self::applyFilters($query, $value, $locale, $driver, $prefix === '' ? (string) $key : $prefix.'.'.$key);
-            }
+            /** @var array<string, array<string, mixed>> $value */
+            self::applyFilters($query, $value, $locale, $driver, $prefix === '' ? (string) $key : $prefix.'.'.$key);
         }
     }
 
     private static function validateExtraParameters(FormRequest|Request $request): void
     {
-        $allKeys = array_keys(Arr::dot($request->all()));
-        $ruleKeys = array_keys(($request instanceof FormRequest && method_exists($request, 'rules')) ? $request->rules() : []);
+        /** @var array<string, mixed> $allInput */
+        $allInput = (array) $request->all();
+        /** @var array<string, mixed> $dottedInput */
+        $dottedInput = Arr::dot($allInput);
+        $allKeys = array_keys($dottedInput);
+        /** @var array<string, mixed> $rules */
+        $rules = $request instanceof FormRequest && method_exists($request, 'rules') ? $request->rules() : [];
+        /** @var list<string> $ruleKeys */
+        $ruleKeys = array_keys($rules);
 
         if (! empty($ruleKeys)) {
             $normalizedInputKeys = array_map(fn ($key) => preg_replace('/\.\d+$/', '.*', $key), $allKeys);
@@ -277,19 +319,31 @@ class QueryBuilder
         }
     }
 
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  class-string<Model>  $modelFQCN
+     * @return array<string, mixed>
+     */
     private static function castDataTypes(array $data, string $modelFQCN): array
     {
         $resources = Resource::generate($modelFQCN);
-        $filters = $data[AssociatedIndex::FILTERS->value] ?? [];
+        /** @var array<string, array<string, mixed>> $filters */
+        $filters = (array) ($data[AssociatedIndex::FILTERS->value] ?? []);
 
         foreach ($filters as $field => $ops) {
-            $type = $resources['filters'][$field]['type'] ?? 'string';
-            $type = $type instanceof AbstractType ? $type->value : $type;
+            $filterConfig = $resources->filters[$field] ?? null;
+            $filterType = $filterConfig?->type;
+            $type = $filterType instanceof AbstractType ? $filterType->value : ($filterType ?? 'string');
+            $typedOps = [];
 
             foreach ($ops as $op => $val) {
-                $data[AssociatedIndex::FILTERS->value][$field][$op] = self::castValue($val, $type);
+                $typedOps[$op] = self::castValue($val, $type);
             }
+
+            $filters[$field] = $typedOps;
         }
+
+        $data[AssociatedIndex::FILTERS->value] = $filters;
 
         return $data;
     }
@@ -304,6 +358,12 @@ class QueryBuilder
             return array_map(fn ($v) => self::castValue($v, $type), $value);
         }
 
+        if (! is_scalar($value)) {
+            // @phpstan-ignore-next-line cast from non-scalar mixed
+            $value = (string) $value;
+        }
+
+        /** @var int|float|non-empty-string|bool $value */
         return match ($type) {
             'integer' => (int) $value,
             'numeric', 'float' => (float) $value,

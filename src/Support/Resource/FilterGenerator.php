@@ -4,32 +4,60 @@ declare(strict_types=1);
 
 namespace Victormgomes\LaravelQueryEngine\Support\Resource;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Config;
 use ReflectionClass;
 use Victormgomes\LaravelQueryEngine\Enums\AbstractType;
 use Victormgomes\LaravelQueryEngine\Enums\Operators;
+use Victormgomes\LaravelQueryEngine\Support\RelationInfo;
 use Victormgomes\LaravelQueryEngine\Support\Types;
 
 final class FilterGenerator
 {
+    /** @var array<string, FilterConfig> */
     private array $filters = [];
 
+    /** @var array<string, array<AbstractType>> */
     private array $operatorTypes;
 
+    /**
+     * @param  array<int, array<string, mixed>>|Collection<int, array<string, mixed>>  $attributes
+     * @param  array<string, RelationInfo>  $relationMap
+     * @param  array<string>|null  $allowedFilters
+     * @param  array<string>  $disabledFilters
+     * @param  array<string>  $allowedOperators
+     * @param  array<string>  $allowedScopes
+     */
     public function __construct(
+        /** @var array<int, array<string, mixed>>|Collection<int, array<string, mixed>> $attributes */
         private readonly array|Collection $attributes,
+        /** @var array<string, RelationInfo> */
         private readonly array $relationMap,
         private readonly ?string $modelFQCN,
+        /** @var array<string>|null */
         private readonly ?array $allowedFilters,
+        /** @var array<string> */
         private readonly array $disabledFilters,
+        /** @var array<string> */
         private readonly array $allowedOperators,
+        /** @var array<string> */
         private readonly array $allowedScopes
     ) {
         $this->operatorTypes = Types::getOperatorTypes();
     }
 
+    /**
+     * @param  array<int, array<string, mixed>>|Collection<int, array<string, mixed>>  $attributes
+     * @param  array<string, RelationInfo>  $relationMap
+     * @param  array<string>|null  $allowedFilters
+     * @param  array<string>  $disabledFilters
+     * @param  array<string>|null  $modelAllowedOperators
+     * @param  array<string>|null  $modelDisableOperators
+     * @param  array<string>  $allowedScopes
+     * @return array<string, FilterConfig>
+     */
     public static function generate(
         array|Collection $attributes,
         array $relationMap = [],
@@ -40,10 +68,12 @@ final class FilterGenerator
         ?array $modelDisableOperators = null,
         array $allowedScopes = []
     ): array {
-        $allowedOperators = $modelAllowedOperators ?? Config::get('laravel-query-engine.allowed_operators', Operators::values());
+        /** @var list<string> $allowedOperators */
+        $allowedOperators = (array) ($modelAllowedOperators ?? Config::get('laravel-query-engine.allowed_operators', Operators::values()));
         if (! empty($modelDisableOperators)) {
             $allowedOperators = array_values(array_diff($allowedOperators, $modelDisableOperators));
         }
+        /** @var list<string> $operators */
         $operators = array_intersect(Operators::values(), $allowedOperators);
 
         $generator = new self(
@@ -59,6 +89,7 @@ final class FilterGenerator
         return $generator->build();
     }
 
+    /** @return array<string, FilterConfig> */
     private function build(): array
     {
         $this->generateStandardFilters();
@@ -82,23 +113,26 @@ final class FilterGenerator
     private function generateStandardFilters(): void
     {
         foreach ($this->attributes as $attribute) {
-            $name = $attribute['name'];
+            /** @var array<string, mixed> $attribute */
+            $name = is_scalar($attribute['name']) ? (string) $attribute['name'] : '';
             if (! $this->isFilterAllowed($name)) {
                 continue;
             }
 
-            $columnType = Types::resolveType($attribute['type'] ?? 'string');
+            $rawType = $attribute['type'] ?? 'string';
+            $columnType = Types::resolveType(is_scalar($rawType) ? (string) $rawType : 'string');
             $allowedOps = $this->getOperationsForType($columnType);
 
             if (! empty($allowedOps)) {
-                $this->filters[$name] = [
-                    'type' => $columnType,
-                    'operations' => $allowedOps,
-                ];
+                $this->filters[$name] = new FilterConfig(
+                    type: $columnType,
+                    operations: $allowedOps,
+                );
             }
         }
     }
 
+    /** @return list<string> */
     private function getOperationsForType(AbstractType $columnType): array
     {
         return array_values(array_filter(
@@ -119,16 +153,16 @@ final class FilterGenerator
         }
 
         foreach ($this->relationMap as $name => $data) {
-            if (! $this->isFilterAllowed($name) || ! isset($data['foreign_key']) || isset($this->filters[$name])) {
+            if (! $this->isFilterAllowed($name) || $data->foreignKey === null || isset($this->filters[$name])) {
                 continue;
             }
 
-            $this->filters[$name] = [
-                'type' => 'relation_id',
-                'operations' => array_values($relationOps),
-                'is_alias' => $data['is_alias'] ?? false,
-                'maps_to' => $data['foreign_key'],
-            ];
+            $this->filters[$name] = new FilterConfig(
+                type: 'relation_id',
+                operations: array_values($relationOps),
+                isAlias: $data->isAlias,
+                mapsTo: $data->foreignKey,
+            );
         }
     }
 
@@ -148,20 +182,28 @@ final class FilterGenerator
             }
 
             if (isset($this->filters[$name])) {
-                $this->filters[$name]['operations'] = array_values(array_unique(array_merge(
-                    $this->filters[$name]['operations'],
+                $existing = $this->filters[$name];
+                $mergedOps = array_values(array_unique(array_merge(
+                    $existing->operations,
                     $ops
                 )));
+                $this->filters[$name] = new FilterConfig(
+                    type: $existing->type,
+                    operations: $mergedOps,
+                    isAlias: $existing->isAlias,
+                    mapsTo: $existing->mapsTo,
+                    isScope: $existing->isScope,
+                );
 
                 continue;
             }
 
-            $this->filters[$name] = [
-                'type' => 'relation',
-                'operations' => $ops,
-                'is_alias' => $data['is_alias'] ?? false,
-                'maps_to' => $data['real_name'],
-            ];
+            $this->filters[$name] = new FilterConfig(
+                type: 'relation',
+                operations: $ops,
+                isAlias: $data->isAlias,
+                mapsTo: $data->realName,
+            );
         }
     }
 
@@ -174,8 +216,8 @@ final class FilterGenerator
         $booleanOps = array_intersect([Operators::EQ->value], $this->allowedOperators);
         if (! empty($booleanOps)) {
             $ops = array_values($booleanOps);
-            $this->filters['with_deleted'] = ['type' => 'boolean', 'operations' => $ops];
-            $this->filters['only_deleted'] = ['type' => 'boolean', 'operations' => $ops];
+            $this->filters['with_deleted'] = new FilterConfig(type: 'boolean', operations: $ops);
+            $this->filters['only_deleted'] = new FilterConfig(type: 'boolean', operations: $ops);
         }
     }
 
@@ -185,7 +227,9 @@ final class FilterGenerator
             return;
         }
 
-        $reflection = new ReflectionClass($this->modelFQCN);
+        /** @var class-string<Model> $modelFQCN */
+        $modelFQCN = $this->modelFQCN;
+        $reflection = new ReflectionClass($modelFQCN);
         foreach ($this->allowedScopes as $scope) {
             $methodName = 'scope'.ucfirst($scope);
             if (! $reflection->hasMethod($methodName)) {
@@ -194,11 +238,11 @@ final class FilterGenerator
 
             $hasParams = $reflection->getMethod($methodName)->getNumberOfParameters() > 1;
 
-            $this->filters[$scope] = [
-                'type' => $hasParams ? 'string' : 'boolean',
-                'operations' => [Operators::EQ->value],
-                'is_scope' => true,
-            ];
+            $this->filters[$scope] = new FilterConfig(
+                type: $hasParams ? 'string' : 'boolean',
+                operations: [Operators::EQ->value],
+                isScope: true,
+            );
         }
     }
 }

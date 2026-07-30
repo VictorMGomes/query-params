@@ -7,20 +7,14 @@ namespace Victormgomes\LaravelQueryEngine\Contracts;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
+/** @template TModel of Model */
 interface FieldResolver
 {
-    /**
-     * Resolve and apply a filter to the query.
-     */
+    /** @param Builder<TModel> $query */
     public function applyFilter(Builder $query, string $field, string $operator, mixed $value, string $locale): bool;
 
-    /**
-     * Resolve and apply a sort to the query.
-     */
+    /** @param Builder<TModel> $query */
     public function applySort(Builder $query, string $field, string $direction, string $locale): bool;
 
-    /**
-     * Resolve and translate an item for output.
-     */
     public function translateItem(Model $item, string $locale): mixed;
 }

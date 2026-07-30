@@ -19,6 +19,7 @@
         "Illuminate\\Pagination\\CursorPaginator",
         "Illuminate\\Pagination\\LengthAwarePaginator",
         "Illuminate\\Support\\Arr",
+        "Illuminate\\Support\\Collection",
         "Illuminate\\Support\\Facades\\Cache",
         "Illuminate\\Support\\Facades\\Config",
         "Illuminate\\Support\\Facades\\Facade",

@@ -10,11 +10,13 @@ use Victormgomes\LaravelQueryEngine\Maps\TypesMap;
 
 final class Types
 {
+    /** @return array<string, AbstractType[]> */
     public static function getOperatorTypes(): array
     {
         return array_map(fn ($config) => $config[AssociatedIndex::TYPES->value], TypesMap::operator());
     }
 
+    /** @return array<string, string> */
     public static function getOperatorRules(): array
     {
         return array_map(fn ($config) => $config[AssociatedIndex::RULES->value], TypesMap::operator());
@@ -28,6 +30,10 @@ final class Types
         return $map[$databaseType] ?? AbstractType::STRING;
     }
 
+    /**
+     * @param  array{columns: array<int, array{type: string, name: string}>}  $table
+     * @return array<string, AbstractType>
+     */
     public static function getColumnTypes(array $table): array
     {
         $columns = $table[AssociatedIndex::COLUMNS->value];

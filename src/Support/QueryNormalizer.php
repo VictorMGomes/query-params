@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Victormgomes\LaravelQueryEngine\Support;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
@@ -16,6 +17,7 @@ use Victormgomes\LaravelQueryEngine\Support\Normalizer\SortsNormalizer;
 
 class QueryNormalizer
 {
+    /** @var \WeakMap<object, bool> */
     protected static \WeakMap $normalized;
 
     public static function normalize(FormRequest|Request $request, ?string $modelFQCN = null): void
@@ -26,7 +28,9 @@ class QueryNormalizer
             return;
         }
 
-        $data = self::decodeJsonValues($request->all());
+        /** @var array<string, mixed> $inputData */
+        $inputData = $request->all();
+        $data = self::decodeJsonValues($inputData);
 
         $data[AssociatedIndex::INCLUDES->value] = IncludesNormalizer::normalize($data[AssociatedIndex::INCLUDES->value] ?? [], $modelFQCN);
         $data[AssociatedIndex::SORTS->value] = SortsNormalizer::normalize($data[AssociatedIndex::SORTS->value] ?? [], $modelFQCN);
@@ -34,6 +38,7 @@ class QueryNormalizer
         $data[AssociatedIndex::FILTERS->value] = FiltersNormalizer::normalize($data[AssociatedIndex::FILTERS->value] ?? [], $modelFQCN);
         $data[AssociatedIndex::PAGE->value] = (array) ($data[AssociatedIndex::PAGE->value] ?? []);
 
+        /** @var array<string, mixed> $data */
         $data = FeaturesNormalizer::filter($data);
 
         $request->query->replace($data);
@@ -42,14 +47,18 @@ class QueryNormalizer
         self::$normalized[$request] = true;
     }
 
+    /** @return FieldResolver<Model>|null */
     public static function resolveDriver(): ?FieldResolver
     {
-        /** @var class-string<FieldResolver>|null $driverClass */
         $driverClass = Config::get('laravel-query-engine.drivers.default');
 
-        return $driverClass ? new $driverClass : null;
+        return is_string($driverClass) && is_subclass_of($driverClass, FieldResolver::class) ? new $driverClass : null;
     }
 
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
     private static function decodeJsonValues(array $data): array
     {
         foreach ($data as $key => $value) {

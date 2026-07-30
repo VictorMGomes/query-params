@@ -9,8 +9,13 @@ use Victormgomes\LaravelQueryEngine\Enums\AssociatedIndex;
 
 class FeaturesNormalizer
 {
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
     public static function filter(array $data): array
     {
+        /** @var array{includes?: bool, sorts?: bool, fields?: bool, filters?: bool, page?: bool} $features */
         $features = Config::get('laravel-query-engine.features', [
             'filters' => true,
             'sorts' => true,

@@ -31,6 +31,7 @@ class CacheRulesCommand extends Command
         return self::SUCCESS;
     }
 
+    /** @return array<int, string> */
     protected function getModels(): array
     {
         $modelPath = app_path('Models');
@@ -47,24 +48,33 @@ class CacheRulesCommand extends Command
             }
         }
 
-        // Also check modules if they exist
-        $modulesPath = base_path('modules');
-        if (is_dir($modulesPath)) {
-            $files = (new Finder)->in($modulesPath)->path('Models')->files()->name('*.php');
-            foreach ($files as $file) {
-                // Approximate module namespace
-                $path = $file->getRelativePathname();
-                $segments = explode(DIRECTORY_SEPARATOR, $path);
-                $module = $segments[0];
-                $className = Str::replaceLast('.php', '', end($segments));
-                $class = "Modules\\{$module}\\Models\\{$className}";
+        $models = array_merge($models, $this->getModuleModels());
 
-                if (class_exists($class) && is_subclass_of($class, 'Illuminate\Database\Eloquent\Model')) {
-                    $models[] = $class;
-                }
+        return array_unique($models);
+    }
+
+    /** @return array<int, string> */
+    protected function getModuleModels(): array
+    {
+        $modulesPath = base_path('modules');
+        if (! is_dir($modulesPath)) {
+            return [];
+        }
+
+        $models = [];
+        $files = (new Finder)->in($modulesPath)->path('Models')->files()->name('*.php');
+        foreach ($files as $file) {
+            $path = $file->getRelativePathname();
+            $segments = explode(DIRECTORY_SEPARATOR, $path);
+            $module = $segments[0];
+            $className = Str::replaceLast('.php', '', end($segments));
+            $class = "Modules\\{$module}\\Models\\{$className}";
+
+            if (class_exists($class) && is_subclass_of($class, 'Illuminate\Database\Eloquent\Model')) {
+                $models[] = $class;
             }
         }
 
-        return array_unique($models);
+        return $models;
     }
 }

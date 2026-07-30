@@ -4,8 +4,16 @@ declare(strict_types=1);
 
 namespace Victormgomes\LaravelQueryEngine\Support\Resource;
 
+use Victormgomes\LaravelQueryEngine\Support\RelationInfo;
+
 final class IncludeGenerator
 {
+    /**
+     * @param  array<string, RelationInfo>  $relationMap
+     * @param  array<string>|null  $allowedIncludes
+     * @param  array<string>  $disabledIncludes
+     * @return array<string, IncludeConfig>
+     */
     public static function generate(array $relationMap, ?array $allowedIncludes = null, array $disabledIncludes = []): array
     {
         $includes = [];
@@ -17,12 +25,12 @@ final class IncludeGenerator
                 continue;
             }
 
-            $includes[$name] = [
-                'type' => $data['type'] ?? 'Relation',
-                'related' => $data['related'] ?? '',
-                'is_alias' => $data['is_alias'] ?? false,
-                'maps_to' => $data['real_name'],
-            ];
+            $includes[$name] = new IncludeConfig(
+                type: $data->type,
+                related: $data->related,
+                isAlias: $data->isAlias,
+                mapsTo: $data->realName,
+            );
         }
 
         return $includes;

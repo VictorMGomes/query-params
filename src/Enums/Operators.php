@@ -37,6 +37,7 @@ enum Operators: string
     case DATE = 'date';
     case TIME = 'time';
 
+    /** @return array<int, string> */
     public static function values(): array
     {
         return array_column(self::cases(), 'value');

@@ -24,12 +24,10 @@ final class RuleType
 
     public const SOMETIMES = 'sometimes';
 
-    /**
-     * Build a validation rule string from multiple parts.
-     * Smart merging logic to prevent conflicting types.
-     */
-    public static function build(...$parts): string
+    /** @param string|array<int, string> ...$parts */
+    public static function build(string|array ...$parts): string
     {
+        /** @var array<int, string> $rules */
         $rules = [];
 
         foreach ($parts as $part) {
@@ -42,8 +40,12 @@ final class RuleType
 
         $rules = array_unique($rules);
 
-        // Conflict Resolution: If we have a specific DB type (int/bool),
-        // remove the generic 'string' type usually provided by the operator map.
+        return self::removeStringTypeWhenMoreSpecificTypeExists($rules);
+    }
+
+    /** @param array<int, string> $rules */
+    private static function removeStringTypeWhenMoreSpecificTypeExists(array $rules): string
+    {
         $hasSpecificType = count(array_intersect($rules, [self::INTEGER, self::NUMERIC, self::BOOLEAN, self::DATE, self::ARRAY])) > 0;
 
         if ($hasSpecificType) {

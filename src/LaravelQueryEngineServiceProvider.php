@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Victormgomes\LaravelQueryEngine;
 
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Request;
 use Spatie\LaravelPackageTools\Package;
@@ -40,33 +40,33 @@ class LaravelQueryEngineServiceProvider extends PackageServiceProvider
     public function packageBooted(): void
     {
         EloquentBuilder::macro('paginateQuery', function (?Request $request = null) {
-            /** @var Builder $this */
+            /** @var EloquentBuilder<Model> $this */
             $request ??= request();
 
             return QueryBuilder::paginateQuery($this, $request);
         });
 
         EloquentBuilder::macro('cursorPaginateQuery', function (?Request $request = null) {
-            /** @var Builder $this */
+            /** @var EloquentBuilder<Model> $this */
             $request ??= request();
 
             return QueryBuilder::cursorPaginateQuery($this, $request);
         });
 
         EloquentBuilder::macro('buildQuery', function (?Request $request = null) {
-            /** @var Builder $this */
+            /** @var EloquentBuilder<Model> $this */
             $request ??= request();
 
             return QueryBuilder::buildQuery($this, $request);
         });
 
         EloquentBuilder::macro('getQueryRules', function () {
-            /** @var Builder $this */
+            /** @var EloquentBuilder<Model> $this */
             return Rules::generate(get_class($this->getModel()));
         });
 
         EloquentBuilder::macro('getFilterSchema', function () {
-            /** @var Builder $this */
+            /** @var EloquentBuilder<Model> $this */
             return Resource::getFilterSchema(get_class($this->getModel()));
         });
 

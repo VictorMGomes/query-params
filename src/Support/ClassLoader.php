@@ -9,6 +9,7 @@ use InvalidArgumentException;
 
 class ClassLoader
 {
+    /** @var array<string, Model> */
     protected static array $instances = [];
 
     public static function instantiateModel(string $modelFQCN): Model

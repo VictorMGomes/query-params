@@ -8,6 +8,7 @@ use Victormgomes\LaravelQueryEngine\Support\RelationMapper;
 
 class SortsNormalizer
 {
+    /** @return array<string, string> */
     public static function normalize(mixed $sortsRaw, ?string $modelFQCN): array
     {
         $sorts = (array) $sortsRaw;
@@ -22,6 +23,7 @@ class SortsNormalizer
             $sorts = $mappedSorts;
         }
 
+        /** @var array<string, string> */
         return $sorts;
     }
 }

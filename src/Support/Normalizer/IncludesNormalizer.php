@@ -8,6 +8,7 @@ use Victormgomes\LaravelQueryEngine\Support\RelationMapper;
 
 class IncludesNormalizer
 {
+    /** @return array<int|string, string|array{fields: string[]}> */
     public static function normalize(mixed $includesRaw, ?string $modelFQCN): array
     {
         $includes = (array) $includesRaw;
@@ -25,13 +26,13 @@ class IncludesNormalizer
                     }
 
                     $parsed[$relation] = [
-                        'fields' => (array) ($value['fields'] ?? []),
+                        'fields' => array_map(fn (mixed $v): string => is_scalar($v) ? (string) $v : '', (array) ($value['fields'] ?? [])),
                     ];
                 } else {
                     $parsed[$relation] = ['fields' => []];
                 }
             } else {
-                $include = trim((string) $value);
+                $include = trim(is_scalar($value) ? (string) $value : '');
 
                 if ($modelFQCN) {
                     $include = RelationMapper::resolveRelation($modelFQCN, $include) ?? $include;
@@ -41,6 +42,7 @@ class IncludesNormalizer
             }
         }
 
+        /** @var array<int|string, string|array{fields: array<string>}> */
         return $parsed;
     }
 }

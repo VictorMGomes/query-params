@@ -5,23 +5,36 @@ declare(strict_types=1);
 namespace Victormgomes\LaravelQueryEngine\Support\Resource;
 
 use Illuminate\Support\Collection;
+use Victormgomes\LaravelQueryEngine\Support\RelationInfo;
 
 final class SortGenerator
 {
+    /** @var array<string, SortConfig> */
     private array $sorts = [];
 
+    /**
+     * @param  array<int, array<string, mixed>>|Collection<int, array<string, mixed>>  $attributes
+     * @param  array<string, RelationInfo>  $relationMap
+     * @param  array<string>|null  $allowedSorts
+     * @param  array<string>  $disabledSorts
+     */
     public function __construct(
+        /** @var array<int, array<string, mixed>>|Collection<int, array<string, mixed>> $attributes */
         private readonly array|Collection $attributes,
+        /** @var array<string, RelationInfo> */
         private readonly array $relationMap,
+        /** @var array<string>|null */
         private readonly ?array $allowedSorts,
+        /** @var array<string> */
         private readonly array $disabledSorts
     ) {}
 
     /**
-     * @param  array<string, mixed>  $relationMap
-     * @param  array<int, string>|null  $allowedSorts
-     * @param  array<int, string>  $disabledSorts
-     * @return array<string, mixed>
+     * @param  array<int, array<string, mixed>>|Collection<int, array<string, mixed>>  $attributes
+     * @param  array<string, RelationInfo>  $relationMap
+     * @param  array<string>|null  $allowedSorts
+     * @param  array<string>  $disabledSorts
+     * @return array<string, SortConfig>
      */
     public static function generate(
         array|Collection $attributes,
@@ -39,9 +52,7 @@ final class SortGenerator
         return $generator->build();
     }
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, SortConfig> */
     private function build(): array
     {
         $this->generateStandardSorts();
@@ -62,11 +73,12 @@ final class SortGenerator
     private function generateStandardSorts(): void
     {
         foreach ($this->attributes as $attribute) {
-            $name = $attribute['name'];
+            /** @var array<string, mixed> $attribute */
+            $name = is_scalar($attribute['name']) ? (string) $attribute['name'] : '';
             if ($this->isSortAllowed($name)) {
-                $this->sorts[$name] = [
-                    'operations' => ['asc', 'desc'],
-                ];
+                $this->sorts[$name] = new SortConfig(
+                    operations: ['asc', 'desc'],
+                );
             }
         }
     }
@@ -78,12 +90,12 @@ final class SortGenerator
                 continue;
             }
 
-            if (isset($data['foreign_key']) && ! isset($this->sorts[$name])) {
-                $this->sorts[$name] = [
-                    'operations' => ['asc', 'desc'],
-                    'is_alias' => $data['is_alias'] ?? false,
-                    'maps_to' => $data['foreign_key'],
-                ];
+            if ($data->foreignKey !== null && ! isset($this->sorts[$name])) {
+                $this->sorts[$name] = new SortConfig(
+                    operations: ['asc', 'desc'],
+                    isAlias: $data->isAlias,
+                    mapsTo: $data->foreignKey,
+                );
             }
         }
     }

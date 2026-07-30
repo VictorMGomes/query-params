@@ -8,14 +8,13 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Validation\Rule;
 use Victormgomes\LaravelQueryEngine\Enums\AbstractType;
 use Victormgomes\LaravelQueryEngine\Enums\RuleType;
+use Victormgomes\LaravelQueryEngine\Support\Resource\FilterConfig;
+use Victormgomes\LaravelQueryEngine\Support\Resource\ResourceConfig;
 
 final class RuleGenerator
 {
-    /**
-     * @param  array<string, mixed>  $resources
-     * @return array<string, mixed>
-     */
-    public static function generate(array $resources): array
+    /** @return array<string, mixed> */
+    public static function generate(ResourceConfig $resources): array
     {
         $filtersRules = self::generateFilters($resources);
         $sortsRules = self::generateSorts($resources);
@@ -32,14 +31,11 @@ final class RuleGenerator
         );
     }
 
-    /**
-     * @param  array<string, mixed>  $resources
-     * @return array<string, mixed>
-     */
-    private static function generateFilters(array $resources): array
+    /** @return array<string, mixed> */
+    private static function generateFilters(ResourceConfig $resources): array
     {
         $rules = [];
-        $allowedFields = array_keys($resources['filters']);
+        $allowedFields = array_keys($resources->filters);
 
         $rules['filters'] = ['sometimes', 'array'.($allowedFields !== [] ? ':'.implode(',', $allowedFields) : '')];
 
@@ -49,24 +45,22 @@ final class RuleGenerator
 
         $operatorRules = Types::getOperatorRules();
 
-        foreach ($resources['filters'] as $field => $config) {
+        foreach ($resources->filters as $field => $config) {
             self::generateFilterRulesForField($rules, $field, $config, $operatorRules);
         }
 
         return $rules;
     }
 
-    /**
-     * @param  array<string, mixed>  $rules
-     * @param  array<string, mixed>  $config
-     * @param  array<string, mixed>  $operatorRules
+    /** @param array<string, mixed> $rules
+     * @param  array<string, string>  $operatorRules
      */
-    private static function generateFilterRulesForField(array &$rules, string $field, array $config, array $operatorRules): void
+    private static function generateFilterRulesForField(array &$rules, string $field, FilterConfig $config, array $operatorRules): void
     {
-        $allowedOps = $config['operations'];
+        $allowedOps = $config->operations;
         $rules['filters.'.$field] = ['sometimes', 'array:'.implode(',', $allowedOps)];
 
-        $dbType = $config['type'] ?? AbstractType::STRING;
+        $dbType = $config->type;
         $dbTypeValue = $dbType instanceof AbstractType ? $dbType->value : (string) $dbType;
 
         foreach ($allowedOps as $operator) {
@@ -80,14 +74,11 @@ final class RuleGenerator
         }
     }
 
-    /**
-     * @param  array<string, mixed>  $resources
-     * @return array<string, mixed>
-     */
-    private static function generateSorts(array $resources): array
+    /** @return array<string, mixed> */
+    private static function generateSorts(ResourceConfig $resources): array
     {
         $rules = [];
-        $allowedFields = array_keys($resources['sorts']);
+        $allowedFields = array_keys($resources->sorts);
 
         $rules['sorts'] = ['sometimes', 'array'.($allowedFields !== [] ? ':'.implode(',', $allowedFields) : '')];
 
@@ -95,21 +86,18 @@ final class RuleGenerator
             return $rules;
         }
 
-        foreach ($resources['sorts'] as $field => $config) {
-            $rules['sorts.'.$field] = [RuleType::SOMETIMES, Rule::in($config['operations'])];
+        foreach ($resources->sorts as $field => $config) {
+            $rules['sorts.'.$field] = [RuleType::SOMETIMES, Rule::in($config->operations)];
         }
 
         return $rules;
     }
 
-    /**
-     * @param  array<string, mixed>  $resources
-     * @return array<string, mixed>
-     */
-    private static function generateFields(array $resources): array
+    /** @return array<string, mixed> */
+    private static function generateFields(ResourceConfig $resources): array
     {
         $rules = [];
-        $allowedFields = array_keys($resources['fields']);
+        $allowedFields = array_keys($resources->fields);
 
         $rules['fields'] = ['sometimes', 'array'];
 
@@ -122,14 +110,11 @@ final class RuleGenerator
         return $rules;
     }
 
-    /**
-     * @param  array<string, mixed>  $resources
-     * @return array<string, mixed>
-     */
-    private static function generateIncludes(array $resources): array
+    /** @return array<string, mixed> */
+    private static function generateIncludes(ResourceConfig $resources): array
     {
         $rules = [];
-        $allowedIncludes = array_keys($resources['includes']);
+        $allowedIncludes = array_keys($resources->includes);
 
         $rules['includes'] = ['sometimes', 'array'];
 
@@ -142,14 +127,11 @@ final class RuleGenerator
         return $rules;
     }
 
-    /**
-     * @param  array<string, mixed>  $resources
-     * @return array<string, mixed>
-     */
-    private static function generatePages(array $resources): array
+    /** @return array<string, mixed> */
+    private static function generatePages(ResourceConfig $resources): array
     {
         $rules = [];
-        $allowedPages = $resources['pagination']['keys'] ?? [];
+        $allowedPages = $resources->pagination->keys;
 
         if ($allowedPages === []) {
             return $rules;
@@ -164,15 +146,13 @@ final class RuleGenerator
         return $rules;
     }
 
-    /**
-     * @return array<int, string>
-     */
+    /** @return array<int, string> */
     private static function getPageRule(string $page): array
     {
         if ($page === 'limit') {
             $maxLimit = Config::get('laravel-query-engine.pagination.max_limit', 100);
 
-            return ['sometimes', 'integer', 'min:1', "max:{$maxLimit}"];
+            return ['sometimes', 'integer', 'min:1', 'max:'.(is_scalar($maxLimit) ? (string) $maxLimit : '100')];
         }
 
         if ($page === 'cursor') {

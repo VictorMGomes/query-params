@@ -36,19 +36,21 @@ class ModelRegistry
         if (! empty($attributes)) {
             /** @var MapQueryEngine $attribute */
             $attribute = $attributes[0]->newInstance();
-            if ($attribute->model !== null) {
+            if (is_string($attribute->model)) {
                 $foundFqcn = $attribute->model;
             }
         }
 
         if ($foundFqcn === null && method_exists($request, 'model')) {
-            $foundFqcn = $request->model();
+            $modelResult = $request->model();
+            $foundFqcn = is_string($modelResult) ? $modelResult : null;
         }
 
-        if ($foundFqcn !== null) {
+        if (is_string($foundFqcn)) {
             self::register($request::class, $foundFqcn);
         }
 
+        /** @var string|null */
         return $foundFqcn;
     }
 }
