@@ -7,14 +7,14 @@ hero:
     tagline: Automatically generates dynamic API parameters, strict validation, and optimized queries based on Eloquent Models.
     actions:
         - theme: brand
-          text: Get Started
-          link: /introduction
+          text: Demo API Doc
+          link: https://demo-project.libs.victormgomes.net/docs/api
         - theme: alt
-          text: View on GitHub
-          link: https://github.com/victormgomes/laravel-query-engine
-        - theme: alt
-          text: Packagist
-          link: https://packagist.org/packages/victormgomes/laravel-query-engine
+          text: Demo Request
+          link: https://demo-project.libs.victormgomes.net/api/users?filters[status][eq]=active&sorts[created_at]=desc&page[number]=1&page[limit]=10
+        - theme: brand
+          text: Demo JSON URL Request
+          link: https://demo-project.libs.victormgomes.net/api/users?filters={"status":{"eq":"active"}}&sorts={"created_at":"desc"}&page={"number":1,"limit":10}
 
 features:
     - title: 🔒 Fully Secure
@@ -44,4 +44,10 @@ class IndexUserRequest extends FormRequest
 {
     use HasQueryEngineRules;
 }
+```
+
+## 3. Build the query
+
+```php
+User::paginateQuery($request);
 ```
