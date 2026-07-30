@@ -1,152 +1,152 @@
 name: Branch Cleanup
 
 on:
-  workflow_call:
-    inputs:
-      age_days:
-        description: "Delete stale branches with no commits in N days"
-        required: false
-        type: number
-        default: 14
-      max_deletions:
-        description: "Hard cap on branches deleted per run"
-        required: false
-        type: number
-        default: 50
-  schedule:
-    - cron: "0 4 * * 1" # Every Monday at 04:00 UTC
-  workflow_dispatch:
-    inputs:
-      age_days:
-        description: "Delete stale branches with no commits in N days"
-        required: false
-        type: number
-        default: 14
-      max_deletions:
-        description: "Hard cap on branches deleted per run"
-        required: false
-        type: number
-        default: 50
+    workflow_call:
+        inputs:
+            age_days:
+                description: "Delete stale branches with no commits in N days"
+                required: false
+                type: number
+                default: 14
+            max_deletions:
+                description: "Hard cap on branches deleted per run"
+                required: false
+                type: number
+                default: 50
+    schedule:
+        - cron: "0 4 * * 1" # Every Monday at 04:00 UTC
+    workflow_dispatch:
+        inputs:
+            age_days:
+                description: "Delete stale branches with no commits in N days"
+                required: false
+                type: number
+                default: 14
+            max_deletions:
+                description: "Hard cap on branches deleted per run"
+                required: false
+                type: number
+                default: 50
 
 permissions:
-  contents: write
-  pull-requests: write
-  issues: write
+    contents: write
+    pull-requests: write
+    issues: write
 
 jobs:
-  cleanup:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - name: Classify and clean branches
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          AGE_DAYS: ${{ inputs.age_days }}
-          MAX_DELETIONS: ${{ inputs.max_deletions }}
-        run: |
-          {
-            echo "## Branch Cleanup Report"
-            echo ""
-          } >> "$GITHUB_STEP_SUMMARY"
+    cleanup:
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        steps:
+            - name: Classify and clean branches
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  REPO: ${{ github.repository }}
+                  AGE_DAYS: ${{ inputs.age_days }}
+                  MAX_DELETIONS: ${{ inputs.max_deletions }}
+              run: |
+                  {
+                    echo "## Branch Cleanup Report"
+                    echo ""
+                  } >> "$GITHUB_STEP_SUMMARY"
 
-          # Fetch all branches with last commit date
-          gh api "repos/$REPO/branches?per_page=100" --jq '.[] | "\(.name)\t\(.commit.sha)"' > /tmp/branches.txt
+                  # Fetch all branches with last commit date
+                  gh api "repos/$REPO/branches?per_page=100" --jq '.[] | "\(.name)\t\(.commit.sha)"' > /tmp/branches.txt
 
-          # Fetch all open PRs (collect head branch names)
-          gh pr list --repo "$REPO" --state open --json headRefName --jq '.[].headRefName' | sort -u > /tmp/open_prs.txt
+                  # Fetch all open PRs (collect head branch names)
+                  gh pr list --repo "$REPO" --state open --json headRefName --jq '.[].headRefName' | sort -u > /tmp/open_prs.txt
 
-          # Fetch all merged PRs (collect head branch names)
-          gh pr list --repo "$REPO" --state merged --json headRefName --jq '.[].headRefName' | sort -u > /tmp/merged_prs.txt
+                  # Fetch all merged PRs (collect head branch names)
+                  gh pr list --repo "$REPO" --state merged --json headRefName --jq '.[].headRefName' | sort -u > /tmp/merged_prs.txt
 
-          # Get default branch
-          DEFAULT_BRANCH=$(gh api "repos/$REPO" --jq '.default_branch')
+                  # Get default branch
+                  DEFAULT_BRANCH=$(gh api "repos/$REPO" --jq '.default_branch')
 
-          # Get protected branches
-          gh api "repos/$REPO/branches?per_page=100" --jq '.[] | select(.protected == true) | .name' > /tmp/protected_branches.txt
+                  # Get protected branches
+                  gh api "repos/$REPO/branches?per_page=100" --jq '.[] | select(.protected == true) | .name' > /tmp/protected_branches.txt
 
-          NOW=$(date +%s)
-          DELETED=0
-          ISSUED=0
-          SKIPPED=0
+                  NOW=$(date +%s)
+                  DELETED=0
+                  ISSUED=0
+                  SKIPPED=0
 
-          {
-            echo "| Branch | Status | Reason | Last Commit | Author |"
-            echo "|--------|--------|--------|-------------|--------|"
-          } >> "$GITHUB_STEP_SUMMARY"
+                  {
+                    echo "| Branch | Status | Reason | Last Commit | Author |"
+                    echo "|--------|--------|--------|-------------|--------|"
+                  } >> "$GITHUB_STEP_SUMMARY"
 
-          while IFS=$'\t' read -r BRANCH SHA; do
-            # Skip default branch
-            if [ "$BRANCH" = "$DEFAULT_BRANCH" ]; then
-              SKIPPED=$((SKIPPED + 1))
-              echo "| \`$BRANCH\` | SKIP | default branch | - | - |" >> "$GITHUB_STEP_SUMMARY"
-              continue
-            fi
+                  while IFS=$'\t' read -r BRANCH SHA; do
+                    # Skip default branch
+                    if [ "$BRANCH" = "$DEFAULT_BRANCH" ]; then
+                      SKIPPED=$((SKIPPED + 1))
+                      echo "| \`$BRANCH\` | SKIP | default branch | - | - |" >> "$GITHUB_STEP_SUMMARY"
+                      continue
+                    fi
 
-            # Skip protected branches
-            if grep -qxF "$BRANCH" /tmp/protected_branches.txt 2>/dev/null; then
-              SKIPPED=$((SKIPPED + 1))
-              echo "| \`$BRANCH\` | SKIP | protected branch | - | - |" >> "$GITHUB_STEP_SUMMARY"
-              continue
-            fi
+                    # Skip protected branches
+                    if grep -qxF "$BRANCH" /tmp/protected_branches.txt 2>/dev/null; then
+                      SKIPPED=$((SKIPPED + 1))
+                      echo "| \`$BRANCH\` | SKIP | protected branch | - | - |" >> "$GITHUB_STEP_SUMMARY"
+                      continue
+                    fi
 
-            # Skip branches with open PRs
-            if grep -qxF "$BRANCH" /tmp/open_prs.txt 2>/dev/null; then
-              SKIPPED=$((SKIPPED + 1))
-              echo "| \`$BRANCH\` | SKIP | has open PR | - | - |" >> "$GITHUB_STEP_SUMMARY"
-              continue
-            fi
+                    # Skip branches with open PRs
+                    if grep -qxF "$BRANCH" /tmp/open_prs.txt 2>/dev/null; then
+                      SKIPPED=$((SKIPPED + 1))
+                      echo "| \`$BRANCH\` | SKIP | has open PR | - | - |" >> "$GITHUB_STEP_SUMMARY"
+                      continue
+                    fi
 
-            # Get last commit date and author
-            COMMIT_DATE=$(gh api "repos/$REPO/commits/$SHA" --jq '.commit.author.date')
-            AUTHOR=$(gh api "repos/$REPO/commits/$SHA" --jq '.commit.author.name')
-            COMMIT_TS=$(date -d "$COMMIT_DATE" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$COMMIT_DATE" +%s 2>/dev/null)
-            AGE_DAYS_CALC=$(( (NOW - COMMIT_TS) / 86400 ))
+                    # Get last commit date and author
+                    COMMIT_DATE=$(gh api "repos/$REPO/commits/$SHA" --jq '.commit.author.date')
+                    AUTHOR=$(gh api "repos/$REPO/commits/$SHA" --jq '.commit.author.name')
+                    COMMIT_TS=$(date -d "$COMMIT_DATE" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$COMMIT_DATE" +%s 2>/dev/null)
+                    AGE_DAYS_CALC=$(( (NOW - COMMIT_TS) / 86400 ))
 
-            # Check if branch was merged via PR
-            if grep -qxF "$BRANCH" /tmp/merged_prs.txt 2>/dev/null; then
-              # Merged branch — auto-delete
-              if [ "$DELETED" -lt "$MAX_DELETIONS" ]; then
-                ENC=$(printf '%s' "$BRANCH" | jq -sRr @uri)
-                if gh api -X DELETE "repos/$REPO/git/refs/heads/$ENC" 2>/dev/null; then
-                  DELETED=$((DELETED + 1))
-                  echo "| \`$BRANCH\` | DELETED | merged via PR | $COMMIT_DATE | $AUTHOR |" >> "$GITHUB_STEP_SUMMARY"
-                else
-                  SKIPPED=$((SKIPPED + 1))
-                  echo "| \`$BRANCH\` | SKIP | delete failed | $COMMIT_DATE | $AUTHOR |" >> "$GITHUB_STEP_SUMMARY"
-                fi
-              else
-                SKIPPED=$((SKIPPED + 1))
-                echo "| \`$BRANCH\` | DEFERRED | max deletions reached | $COMMIT_DATE | $AUTHOR |" >> "$GITHUB_STEP_SUMMARY"
-              fi
-              continue
-            fi
+                    # Check if branch was merged via PR
+                    if grep -qxF "$BRANCH" /tmp/merged_prs.txt 2>/dev/null; then
+                      # Merged branch — auto-delete
+                      if [ "$DELETED" -lt "$MAX_DELETIONS" ]; then
+                        ENC=$(printf '%s' "$BRANCH" | jq -sRr @uri)
+                        if gh api -X DELETE "repos/$REPO/git/refs/heads/$ENC" 2>/dev/null; then
+                          DELETED=$((DELETED + 1))
+                          echo "| \`$BRANCH\` | DELETED | merged via PR | $COMMIT_DATE | $AUTHOR |" >> "$GITHUB_STEP_SUMMARY"
+                        else
+                          SKIPPED=$((SKIPPED + 1))
+                          echo "| \`$BRANCH\` | SKIP | delete failed | $COMMIT_DATE | $AUTHOR |" >> "$GITHUB_STEP_SUMMARY"
+                        fi
+                      else
+                        SKIPPED=$((SKIPPED + 1))
+                        echo "| \`$BRANCH\` | DEFERRED | max deletions reached | $COMMIT_DATE | $AUTHOR |" >> "$GITHUB_STEP_SUMMARY"
+                      fi
+                      continue
+                    fi
 
-            # Check if stale (no commits in N days)
-            if [ "$AGE_DAYS_CALC" -ge "$AGE_DAYS" ]; then
-              # Stale branch — create issue
-              if [ "$DELETED" -lt "$MAX_DELETIONS" ]; then
-                ISSUE_TITLE="Stale branch: \`$BRANCH\` (last commit $AGE_DAYS_CALC days ago)"
-                ISSUE_BODY="Branch \`$BRANCH\` has no open PR and no commits for $AGE_DAYS_CALC days (since $COMMIT_DATE).\n\nAuthor: $AUTHOR\n\nThis branch was automatically flagged for cleanup. If this branch is still needed, please comment within 7 days. Otherwise, it will be deleted in the next cleanup run."
-                gh issue create --repo "$REPO" --title "$ISSUE_TITLE" --body "$ISSUE_BODY" --label "stale-branch" 2>/dev/null && ISSUED=$((ISSUED + 1))
-                SKIPPED=$((SKIPPED + 1))
-                echo "| \`$BRANCH\` | ISSUE CREATED | stale ($AGE_DAYS_CALC days) | $COMMIT_DATE | $AUTHOR |" >> "$GITHUB_STEP_SUMMARY"
-              else
-                SKIPPED=$((SKIPPED + 1))
-                echo "| \`$BRANCH\` | DEFERRED | max deletions reached | $COMMIT_DATE | $AUTHOR |" >> "$GITHUB_STEP_SUMMARY"
-              fi
-              continue
-            fi
+                    # Check if stale (no commits in N days)
+                    if [ "$AGE_DAYS_CALC" -ge "$AGE_DAYS" ]; then
+                      # Stale branch — create issue
+                      if [ "$DELETED" -lt "$MAX_DELETIONS" ]; then
+                        ISSUE_TITLE="Stale branch: \`$BRANCH\` (last commit $AGE_DAYS_CALC days ago)"
+                        ISSUE_BODY="Branch \`$BRANCH\` has no open PR and no commits for $AGE_DAYS_CALC days (since $COMMIT_DATE).\n\nAuthor: $AUTHOR\n\nThis branch was automatically flagged for cleanup. If this branch is still needed, please comment within 7 days. Otherwise, it will be deleted in the next cleanup run."
+                        gh issue create --repo "$REPO" --title "$ISSUE_TITLE" --body "$ISSUE_BODY" --label "stale-branch" 2>/dev/null && ISSUED=$((ISSUED + 1))
+                        SKIPPED=$((SKIPPED + 1))
+                        echo "| \`$BRANCH\` | ISSUE CREATED | stale ($AGE_DAYS_CALC days) | $COMMIT_DATE | $AUTHOR |" >> "$GITHUB_STEP_SUMMARY"
+                      else
+                        SKIPPED=$((SKIPPED + 1))
+                        echo "| \`$BRANCH\` | DEFERRED | max deletions reached | $COMMIT_DATE | $AUTHOR |" >> "$GITHUB_STEP_SUMMARY"
+                      fi
+                      continue
+                    fi
 
-            # Active branch — skip
-            SKIPPED=$((SKIPPED + 1))
-            echo "| \`$BRANCH\` | SKIP | active ($AGE_DAYS_CALC days) | $COMMIT_DATE | $AUTHOR |" >> "$GITHUB_STEP_SUMMARY"
+                    # Active branch — skip
+                    SKIPPED=$((SKIPPED + 1))
+                    echo "| \`$BRANCH\` | SKIP | active ($AGE_DAYS_CALC days) | $COMMIT_DATE | $AUTHOR |" >> "$GITHUB_STEP_SUMMARY"
 
-          done < /tmp/branches.txt
+                  done < /tmp/branches.txt
 
-          {
-            echo ""
-            echo "**Summary:** $DELETED deleted, $ISSUED issues created, $SKIPPED skipped"
-            echo ""
-            echo "Config: age_days=$AGE_DAYS, max_deletions=$MAX_DELETIONS"
-          } >> "$GITHUB_STEP_SUMMARY"
+                  {
+                    echo ""
+                    echo "**Summary:** $DELETED deleted, $ISSUED issues created, $SKIPPED skipped"
+                    echo ""
+                    echo "Config: age_days=$AGE_DAYS, max_deletions=$MAX_DELETIONS"
+                  } >> "$GITHUB_STEP_SUMMARY"
