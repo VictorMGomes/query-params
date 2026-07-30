@@ -13,9 +13,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         git \
         curl \
         gnupg \
-        nodejs \
-        npm \
     && docker-php-ext-install zip \
+    && rm -rf /var/lib/apt/lists/*
+
+# hadolint ignore=DL3008
+RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && npm install -g npm@latest \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Docker CLI and Sudo (for Docker-out-of-Docker)
