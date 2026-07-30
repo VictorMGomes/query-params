@@ -23,9 +23,9 @@ it('respects globally disabled features in resource generation', function (): vo
 
     $resource = Resource::generate(Post::class);
 
-    expect($resource['includes'])->toBeEmpty();
-    expect($resource['filters'])->toBeEmpty();
-    expect($resource['sorts'])->not->toBeEmpty();
+    expect($resource->includes)->toBeEmpty();
+    expect($resource->filters)->toBeEmpty();
+    expect($resource->sorts)->not->toBeEmpty();
 });
 
 it('removes disabled features from the request during normalization', function (): void {

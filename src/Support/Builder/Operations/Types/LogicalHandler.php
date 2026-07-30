@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace Victormgomes\LaravelQueryEngine\Support\Builder\Operations\Types;
 
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Victormgomes\LaravelQueryEngine\Enums\Operators;
 use Victormgomes\LaravelQueryEngine\Support\Builder\Operations\Filter;
 
 class LogicalHandler implements FilterOperation
 {
+    /** @param EloquentBuilder<Model>|QueryBuilder $query */
     public function handle(EloquentBuilder|QueryBuilder $query, string $field, Operators $operator, mixed $value): void
     {
         if (! is_array($value)) {
@@ -18,7 +20,7 @@ class LogicalHandler implements FilterOperation
         }
 
         match ($operator) {
-            Operators::OR => $query->where(function ($q) use ($value): void {
+            Operators::OR => $query->where(function (EloquentBuilder|QueryBuilder $q) use ($value): void {
                 foreach ($value as $subField => $subOps) {
                     foreach ((array) $subOps as $op => $val) {
                         Filter::build($q, $subField, $op, $val);
@@ -32,7 +34,7 @@ class LogicalHandler implements FilterOperation
                     }
                 }
             })(),
-            Operators::NOT => $query->whereNot(function ($q) use ($value): void {
+            Operators::NOT => $query->whereNot(function (EloquentBuilder|QueryBuilder $q) use ($value): void {
                 foreach ($value as $subField => $subOps) {
                     foreach ((array) $subOps as $op => $val) {
                         Filter::build($q, $subField, $op, $val);

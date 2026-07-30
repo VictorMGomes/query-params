@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Victormgomes\LaravelQueryEngine\Support;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Str;
 use ReflectionClass;
@@ -16,11 +15,10 @@ use Throwable;
 
 class RelationMapper
 {
-    /**
-     * Discovery map for a model: [fancy_name => [real_name, type, foreign_key]]
-     */
+    /** @var array<string, array<string, RelationInfo>> */
     protected static array $cache = [];
 
+    /** @return array<string, RelationInfo> */
     public static function getMap(Model|string $model): array
     {
         $class = is_string($model) ? $model : get_class($model);
@@ -29,104 +27,44 @@ class RelationMapper
             return self::$cache[$class];
         }
 
+        /** @var Model $instance */
         $instance = is_string($model) ? new $model : $model;
         $reflection = new ReflectionClass($instance);
         $map = [];
 
         foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
-            // 1. Basic check: Relations never have required parameters
-            if ($method->getNumberOfRequiredParameters() > 0) {
+            if (self::skipMethodWithRequiredParameters($method)) {
                 continue;
             }
 
-            // 2. Class check: Skip methods declared by the Laravel core or Eloquent internals
-            $declaringClass = $method->getDeclaringClass()->getName();
-            if (str_starts_with($declaringClass, 'Illuminate\Database\Eloquent') ||
-                str_starts_with($declaringClass, 'Illuminate\Support\Traits')) {
+            if (self::isCoreLaravelMethod($method)) {
                 continue;
             }
 
-            // 3. Type Hint check: Use Reflection to avoid execution if possible
-            $returnType = $method->getReturnType();
-
-            if ($returnType) {
-                $types = [];
-                if ($returnType instanceof ReflectionNamedType) {
-                    $types[] = $returnType->getName();
-                } elseif ($returnType instanceof ReflectionUnionType) {
-                    foreach ($returnType->getTypes() as $type) {
-                        if ($type instanceof ReflectionNamedType) {
-                            $types[] = $type->getName();
-                        }
-                    }
-                }
-
-                $isRelation = false;
-                $isExplicitlyNotRelation = false;
-
-                foreach ($types as $typeName) {
-                    if (is_a($typeName, Relation::class, true)) {
-                        $isRelation = true;
-                        break;
-                    }
-
-                    // If it returns a primitive or non-Relation class, it's likely not a relation
-                    if (in_array($typeName, ['bool', 'void', 'int', 'string', 'array', 'object', 'float', 'mixed', 'self', 'static', 'parent'])) {
-                        $isExplicitlyNotRelation = true;
-                    }
-                }
-
-                // If it's a known non-relation type, skip it entirely without executing
-                if ($isExplicitlyNotRelation && ! $isRelation) {
-                    continue;
-                }
-            }
-
-            // 4. Blacklist: Skip common non-relation methods that might not have type hints in older versions
-            if (in_array($method->getName(), [
-                'jsonSerialize', 'toArray', 'replicate', 'push', 'save',
-                'delete', 'forceDelete', 'restore', 'touch', 'refresh',
-                'getAttributes', 'getOriginal', 'getDirty', 'getChanges',
-                'wasChanged', 'isDirty', 'isClean', 'getRelations',
-            ])) {
+            if (self::inferRelationFromReturnType($method) === false) {
                 continue;
             }
 
-            try {
-                // 5. Execution: Now it is safe to call the method to confirm if it returns a Relation
-                // We use @ to suppress potential errors from calling methods that might depend on state
-                $return = @$instance->{$method->getName()}();
-
-                if ($return instanceof Relation) {
-                    $realName = $method->getName();
-                    $snakeName = Str::snake($realName);
-
-                    $relationData = [
-                        'real_name' => $realName,
-                        'type' => class_basename($return),
-                        'related' => class_basename($return->getRelated()),
-                        'foreign_key' => null,
-                    ];
-
-                    if ($return instanceof BelongsTo) {
-                        $relationData['foreign_key'] = $return->getForeignKeyName();
-                    }
-
-                    // Map real name
-                    $map[$realName] = $relationData;
-
-                    // Map snake_case alias
-                    if ($snakeName !== $realName) {
-                        $map[$snakeName] = array_merge($relationData, ['is_alias' => true]);
-                    }
-
-                    // Map Foreign Key alias (if it's a BelongsTo)
-                    if ($relationData['foreign_key'] && $relationData['foreign_key'] !== $realName && $relationData['foreign_key'] !== $snakeName) {
-                        $map[$relationData['foreign_key']] = array_merge($relationData, ['is_alias' => true, 'is_fk' => true]);
-                    }
-                }
-            } catch (Throwable $e) {
+            if (self::isBlacklistedNonRelationMethod($method)) {
                 continue;
+            }
+
+            $relationInfo = self::executeAndConfirmRelation($instance, $method);
+            if ($relationInfo === null) {
+                continue;
+            }
+
+            $realName = $method->getName();
+            $snakeName = Str::snake($realName);
+
+            $map[$realName] = $relationInfo;
+
+            if ($snakeName !== $realName) {
+                $map[$snakeName] = $relationInfo->withAlias();
+            }
+
+            if ($relationInfo->foreignKey && $relationInfo->foreignKey !== $realName && $relationInfo->foreignKey !== $snakeName) {
+                $map[$relationInfo->foreignKey] = $relationInfo->withAlias(isFk: true);
             }
         }
 
@@ -137,18 +75,95 @@ class RelationMapper
     {
         $map = self::getMap($model);
 
-        return $map[$name]['real_name'] ?? null;
+        return $map[$name]->realName ?? null;
     }
 
     public static function resolveFilterField(Model|string $model, string $name): string
     {
         $map = self::getMap($model);
 
-        // If the name is a relation alias that maps to a Foreign Key, use the FK directly for performance
-        if (isset($map[$name]) && $map[$name]['foreign_key']) {
-            return $map[$name]['foreign_key'];
+        if (isset($map[$name]) && $map[$name]->foreignKey) {
+            return $map[$name]->foreignKey;
         }
 
         return $name;
+    }
+
+    private static function skipMethodWithRequiredParameters(ReflectionMethod $method): bool
+    {
+        return $method->getNumberOfRequiredParameters() > 0;
+    }
+
+    private static function isCoreLaravelMethod(ReflectionMethod $method): bool
+    {
+        $declaringClass = $method->getDeclaringClass()->getName();
+
+        return str_starts_with($declaringClass, 'Illuminate\Database\Eloquent') ||
+            str_starts_with($declaringClass, 'Illuminate\Support\Traits');
+    }
+
+    private static function inferRelationFromReturnType(ReflectionMethod $method): ?bool
+    {
+        $returnType = $method->getReturnType();
+
+        if (! $returnType) {
+            return null;
+        }
+
+        $types = [];
+        if ($returnType instanceof ReflectionNamedType) {
+            $types[] = $returnType->getName();
+        } elseif ($returnType instanceof ReflectionUnionType) {
+            foreach ($returnType->getTypes() as $type) {
+                if ($type instanceof ReflectionNamedType) {
+                    $types[] = $type->getName();
+                }
+            }
+        }
+
+        $isRelation = false;
+        $isExplicitlyNotRelation = false;
+
+        foreach ($types as $typeName) {
+            if (is_a($typeName, Relation::class, true)) {
+                $isRelation = true;
+                break;
+            }
+
+            if (in_array($typeName, ['bool', 'void', 'int', 'string', 'array', 'object', 'float', 'mixed', 'self', 'static', 'parent'])) {
+                $isExplicitlyNotRelation = true;
+            }
+        }
+
+        if ($isExplicitlyNotRelation && ! $isRelation) {
+            return false;
+        }
+
+        return null;
+    }
+
+    private static function isBlacklistedNonRelationMethod(ReflectionMethod $method): bool
+    {
+        return in_array($method->getName(), [
+            'jsonSerialize', 'toArray', 'replicate', 'push', 'save',
+            'delete', 'forceDelete', 'restore', 'touch', 'refresh',
+            'getAttributes', 'getOriginal', 'getDirty', 'getChanges',
+            'wasChanged', 'isDirty', 'isClean', 'getRelations',
+        ]);
+    }
+
+    private static function executeAndConfirmRelation(Model $instance, ReflectionMethod $method): ?RelationInfo
+    {
+        try {
+            $return = @$instance->{$method->getName()}();
+
+            if (! $return instanceof Relation) {
+                return null;
+            }
+
+            return RelationInfo::fromRelation($return, $method->getName());
+        } catch (Throwable $e) {
+            return null;
+        }
     }
 }

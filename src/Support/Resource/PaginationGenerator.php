@@ -8,14 +8,14 @@ use Victormgomes\LaravelQueryEngine\Enums\AssociatedIndex;
 
 final class PaginationGenerator
 {
-    public static function generate(): array
+    public static function generate(): PaginationConfig
     {
-        return [
-            'keys' => [AssociatedIndex::NUMBER->value, AssociatedIndex::LIMIT->value, 'cursor'],
-            'defaults' => [
+        return new PaginationConfig(
+            keys: [AssociatedIndex::NUMBER->value, AssociatedIndex::LIMIT->value, 'cursor'],
+            defaults: [
                 'limit' => 10,
                 'max_limit' => 100,
             ],
-        ];
+        );
     }
 }

@@ -10,6 +10,7 @@ use Victormgomes\LaravelQueryEngine\Support\RelationMapper;
 
 class FiltersNormalizer
 {
+    /** @return array<string, array<string, mixed>> */
     public static function normalize(mixed $filtersRaw, ?string $modelFQCN): array
     {
         $filters = (array) $filtersRaw;
@@ -24,7 +25,8 @@ class FiltersNormalizer
             $filters = $mappedFilters;
         }
 
-        $allowedOperators = Config::get('laravel-query-engine.allowed_operators', Operators::values());
+        /** @var list<string> $allowedOperators */
+        $allowedOperators = (array) Config::get('laravel-query-engine.allowed_operators', Operators::values());
 
         foreach ($filters as $field => $value) {
             if (! is_array($value)) {
@@ -45,6 +47,7 @@ class FiltersNormalizer
             }
         }
 
+        /** @var array<string, array<string, mixed>> */
         return $filters;
     }
 }

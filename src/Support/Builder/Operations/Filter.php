@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Victormgomes\LaravelQueryEngine\Support\Builder\Operations;
 
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Victormgomes\LaravelQueryEngine\Enums\Operators;
 use Victormgomes\LaravelQueryEngine\Support\Builder\Operations\Types\ArrayHandler;
@@ -19,6 +20,7 @@ use Victormgomes\LaravelQueryEngine\Support\Builder\Operations\Types\StringHandl
 
 class Filter
 {
+    /** @var array<string, class-string<FilterOperation>> */
     private static array $handlerMap = [
         Operators::EQ->value => ComparisonHandler::class,
         Operators::NE->value => ComparisonHandler::class,
@@ -59,9 +61,11 @@ class Filter
         Operators::TIME->value => DateHandler::class,
     ];
 
+    /** @var array<string, FilterOperation> */
     private static array $handlerInstances = [];
 
-    public static function build(EloquentBuilder|QueryBuilder $query, string $field, string $operator, $value): void
+    /** @param EloquentBuilder<Model>|QueryBuilder $query */
+    public static function build(EloquentBuilder|QueryBuilder $query, string $field, string $operator, mixed $value): void
     {
         $op = Operators::tryFrom($operator);
 
@@ -79,7 +83,9 @@ class Filter
     private static function getHandler(string $class): FilterOperation
     {
         if (! isset(self::$handlerInstances[$class])) {
-            self::$handlerInstances[$class] = new $class;
+            /** @var FilterOperation $handler */
+            $handler = new $class;
+            self::$handlerInstances[$class] = $handler;
         }
 
         return self::$handlerInstances[$class];

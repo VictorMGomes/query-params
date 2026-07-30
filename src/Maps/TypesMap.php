@@ -11,6 +11,7 @@ use Victormgomes\LaravelQueryEngine\Enums\RuleType;
 
 class TypesMap
 {
+    /** @return array<string, AbstractType> */
     public static function abstract(): array
     {
         $typeMappings = [
@@ -34,6 +35,7 @@ class TypesMap
         return $flattened;
     }
 
+    /** @return array<string, array{types: AbstractType[], rules: string}> */
     public static function operator(): array
     {
         $allTypes = [

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Victormgomes\LaravelQueryEngine\Commands;
 
+use Illuminate\Cache\Repository;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 
@@ -15,7 +16,9 @@ class ClearRulesCacheCommand extends Command
 
     public function handle(): int
     {
+        /** @var string|null $model */
         $model = $this->argument('model');
+        /** @var Repository $cache */
         $cache = Cache::getFacadeRoot();
 
         if ($model) {

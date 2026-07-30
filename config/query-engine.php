@@ -45,9 +45,7 @@ return [
     | Define custom resolvers for specific field behaviors
     |
     */
-    'drivers' => [
-        // 'default' => App\Support\QueryDrivers\CustomDriver::class,
-    ],
+    'drivers' => [],
 
     /*
     |--------------------------------------------------------------------------
