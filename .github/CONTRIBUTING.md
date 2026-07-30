@@ -13,10 +13,10 @@ effort. Small fixes (typos, broken links) can go directly to a Pull Request.
 
 ### 2. Fork or Branch
 
-| Your access | Workflow |
-|---|---|
-| **External contributor** | Fork the repository, create a feature branch in your fork |
-| **Trusted collaborator** (write access) | Create a feature branch directly in the main repository |
+| Your access                             | Workflow                                                  |
+| --------------------------------------- | --------------------------------------------------------- |
+| **External contributor**                | Fork the repository, create a feature branch in your fork |
+| **Trusted collaborator** (write access) | Create a feature branch directly in the main repository   |
 
 ### 3. Create a Feature Branch
 
